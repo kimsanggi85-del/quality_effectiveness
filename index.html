@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>품질개선 유효성 검증</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--steel:#23456E;--steel2:#2F5A8C;--amber:#D9822B;--bg:#F2F4F7;--card:#fff;--line:#DDE2E9;--ink:#1D2530;--sub:#667085;--ok:#1F8A4C;--warn:#C27B12;--ng:#C0392B;--r:8px;--top:#202833;--nav:#1B2C45}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,'Malgun Gothic',system-ui,sans-serif;font-size:14px}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--steel2)}
+/* top bar */
+.top{position:sticky;top:0;z-index:30;height:49px;background:var(--top);color:#fff;display:flex;align-items:center;gap:6px;padding:0 14px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;margin-right:18px;white-space:nowrap}
+.logo i{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:6px;background:var(--amber);color:#fff;font-style:normal;font-weight:800}
+.logo small{font-weight:400;color:#AEB7C4;font-size:12px}
+.menu{display:flex;gap:2px;height:100%}
+.menu button{background:none;border:0;color:#C9D1DC;padding:0 14px;height:100%;cursor:pointer;border-bottom:3px solid transparent}
+.menu button:hover{color:#fff}
+.menu button.on{color:#fff;border-bottom-color:var(--amber);font-weight:600}
+.sp{flex:1}
+.who{display:flex;align-items:center;gap:8px;font-size:13px;color:#C9D1DC;white-space:nowrap}
+.who b{color:#fff}
+.dot{width:9px;height:9px;border-radius:50%;background:#98A2B3;display:inline-block}
+.dot.ok{background:#3CCB7F}.dot.busy{background:#F5B83D;animation:bl 1s infinite}.dot.err{background:#F04438}
+@keyframes bl{50%{opacity:.3}}
+.hb{display:none;background:none;border:0;color:#fff;font-size:22px;padding:4px 8px;cursor:pointer}
+.tbtn{background:#34404F;border:1px solid #4A5566;color:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px}
+/* mobile nav */
+.nav{position:fixed;inset:0 auto 0 0;width:240px;background:var(--nav);color:#fff;z-index:50;transform:translateX(-100%);transition:.2s;padding:14px 0;display:flex;flex-direction:column}
+.nav.open{transform:none}
+.nav button.m{display:block;width:100%;text-align:left;background:none;border:0;color:#C9D1DC;padding:13px 20px;font-size:15px}
+.nav button.m.on{background:#26406A;color:#fff;border-left:4px solid var(--amber)}
+.nav .navwho{padding:14px 20px;border-top:1px solid #2E4466;margin-top:auto;font-size:13px}
+.shade{position:fixed;inset:0;background:#0006;z-index:40;display:none}.shade.open{display:block}
+/* layout */
+main{max-width:1400px;margin:0 auto;padding:16px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.panel h3{margin:0 0 12px;font-size:15px;display:flex;align-items:center;gap:8px}
+.panel h3 .sp{flex:1}
+.ph{display:flex;align-items:center;gap:10px;margin:0 0 14px;flex-wrap:wrap}
+.ph h2{margin:0;font-size:19px}
+.ph .code{color:var(--sub);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;border-top:3px solid var(--steel)}
+.kpi .l{font-size:12px;color:var(--sub)}.kpi .v{font-size:24px;font-weight:700;margin-top:4px}.kpi .v small{font-size:12px;color:var(--sub);font-weight:400;margin-left:3px}
+.kpi.a{border-top-color:var(--amber)}.kpi.g{border-top-color:var(--ok)}.kpi.r{border-top-color:var(--ng)}
+.btn{background:#fff;border:1px solid #C5CCD6;border-radius:6px;padding:7px 13px;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#F6F8FA}
+.btn.p{background:var(--steel);border-color:var(--steel);color:#fff}.btn.p:hover{background:var(--steel2)}
+.btn.am{background:var(--amber);border-color:var(--amber);color:#fff}
+.btn.d{color:var(--ng);border-color:#E7B5AF}
+.btn.s{padding:4px 9px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.flt{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.flt select,.flt input{border:1px solid #C5CCD6;border-radius:6px;padding:7px 9px;background:#fff;max-width:100%}
+.tw{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th{background:#EEF1F5;color:#344054;font-weight:600;padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+table.t td{padding:8px;border-bottom:1px solid #EDF0F3;vertical-align:top}
+table.t tr.cl{cursor:pointer}table.t tr.cl:hover td{background:#F7F9FC}
+.c{text-align:center}.rt{text-align:right}.nw{white-space:nowrap}
+.ell{max-width:330px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;white-space:nowrap}
+.tag.ok{background:#E3F4EA;color:var(--ok)}.tag.w{background:#FDF1DC;color:var(--warn)}.tag.ng{background:#FBE4E1;color:var(--ng)}.tag.n{background:#EEF1F5;color:#475467}.tag.b{background:#E4ECF7;color:var(--steel)}
+.muted{color:var(--sub);font-size:12px}
+/* form */
+.fg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 14px}
+.f label{display:block;font-size:12px;color:var(--sub);margin-bottom:4px}
+.f input,.f select,.f textarea{width:100%;border:1px solid #C5CCD6;border-radius:6px;padding:8px 9px;background:#fff}
+.f textarea{min-height:92px;resize:vertical;line-height:1.5}
+.f input:disabled,.f select:disabled,.f textarea:disabled,.ck input:disabled,.ck textarea:disabled{background:#F4F6F8;color:#344054}
+.span2{grid-column:span 2}.span4{grid-column:1/-1}
+.req::after{content:' *';color:var(--ng)}
+table.ck{width:100%;border-collapse:collapse}
+table.ck th{background:#EEF1F5;font-size:12px;padding:8px;border:1px solid var(--line)}
+table.ck td{border:1px solid var(--line);padding:6px 8px;vertical-align:middle}
+table.ck td.g{background:#F7F9FC;font-weight:600;text-align:center;width:80px}
+table.ck textarea{width:100%;border:1px solid #D0D5DD;border-radius:5px;padding:6px;min-height:44px;resize:vertical;line-height:1.4}
+table.ck input.sc{width:62px;text-align:center;border:1px solid #C5CCD6;border-radius:5px;padding:7px 4px;font-weight:700;font-size:15px}
+table.ck input.sc.bad{border-color:var(--ng);background:#FFF3F1}
+.tot{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:12px;padding:12px 14px;background:#F7F9FC;border:1px solid var(--line);border-radius:var(--r)}
+.tot .big{font-size:26px;font-weight:800}
+.readout{font-variant-numeric:tabular-nums}
+.appr{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.appr .box{border:1px solid var(--line);border-radius:var(--r);padding:10px;text-align:center;background:#FBFCFD}
+.appr .box .h{font-size:12px;color:var(--sub)}.appr .box .n{font-weight:700;font-size:15px;margin:6px 0 2px;min-height:20px}
+.appr .box .d{font-size:12px;color:var(--sub);min-height:16px}
+.bar{height:10px;background:#EDF0F3;border-radius:5px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--steel)}
+.bar>i.lo{background:var(--amber)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.stick{position:sticky;bottom:0;background:#fffe;backdrop-filter:blur(4px);border-top:1px solid var(--line);padding:10px 16px;margin:0 -16px -16px;display:flex;gap:8px;flex-wrap:wrap;border-radius:0 0 var(--r) var(--r)}
+/* cards (mobile) */
+.cards{display:none}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:10px}
+.card .t1{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.card .pn{font-weight:700;font-size:15px}
+.card .ln{font-size:13px;color:#344054;margin-top:6px;line-height:1.45}
+.card .ft{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.cki{border:1px solid var(--line);border-radius:var(--r);padding:10px;margin-bottom:8px;background:#fff}
+.cki .q{font-size:13px;font-weight:600;margin-bottom:6px}
+.cki .row{display:flex;gap:8px;align-items:center;margin-top:6px}
+/* modal */
+.mb{position:fixed;inset:0;background:#0008;z-index:60;display:none;align-items:center;justify-content:center;padding:16px}
+.mb.open{display:flex}
+.md{background:#fff;border-radius:10px;width:100%;max-width:560px;max-height:90vh;overflow:auto;padding:18px}
+.md h3{margin:0 0 12px}
+.pinpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.pinpad button{padding:14px;font-size:18px;border:1px solid #C5CCD6;border-radius:8px;background:#fff;cursor:pointer}
+.pindisp{font-size:28px;letter-spacing:10px;text-align:center;border:1px solid #C5CCD6;border-radius:8px;padding:8px;min-height:52px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1D2530;color:#fff;padding:10px 18px;border-radius:8px;z-index:90;opacity:0;transition:.25s;pointer-events:none;max-width:90vw}
+.toast.on{opacity:1}
+.hint{background:#FFF8EC;border:1px solid #F2D6A8;color:#7A4B0C;border-radius:6px;padding:8px 10px;font-size:13px;margin-bottom:10px}
+#print{display:none}
+.m-only{display:none}
+.evg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.evc{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:#fff;font-size:12px}
+.evt{display:grid;place-items:center;height:118px;background:#EEF1F5;text-decoration:none}
+.evt img{width:100%;height:118px;object-fit:cover;display:block}
+.evf{font-size:20px;font-weight:800;color:var(--steel)}
+.evm{padding:7px 8px;display:grid;gap:3px}.evm .ell{max-width:100%}
+.actr{display:grid;grid-template-columns:1fr 110px 150px 190px;gap:8px;align-items:start;padding:9px 0;border-bottom:1px solid #EDF0F3}
+.actr input{width:100%;border:1px solid #C5CCD6;border-radius:6px;padding:6px 8px}
+.actr .dn{font-size:12px;color:var(--ok)}
+.monr{display:grid;grid-template-columns:70px 120px 110px 1fr 200px;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #EDF0F3}
+.subh{font-size:13px;font-weight:700;margin:14px 0 6px;color:#344054}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.fg{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:700px){
+ .m-only{display:inline-block}
+ .actr{grid-template-columns:1fr 1fr}.actr>*:first-child{grid-column:1/-1}.actr>*:last-child{grid-column:1/-1}
+ .monr{grid-template-columns:60px 1fr;row-gap:4px}.monr>*:nth-child(n+4){grid-column:1/-1}
+ .evg{grid-template-columns:repeat(2,1fr)}
+ .menu,.who .nm,.logo small{display:none}.hb{display:block}
+ main{padding:10px}
+ .kpis{grid-template-columns:repeat(2,1fr)}
+ .fg{grid-template-columns:1fr}.span2{grid-column:auto}
+ .tbl-pc{display:none}.cards{display:block}
+ .grid2{grid-template-columns:1fr}
+ .appr{grid-template-columns:repeat(3,1fr)}
+ .ph h2{font-size:17px}
+ .stick{margin:0 -10px -16px}
+ .panel{padding:12px}
+}
+/* ===== print ===== */
+@page{size:A4 landscape;margin:9mm}
+@media print{
+ body{background:#fff}
+ .top,.nav,.shade,main,.mb,.toast{display:none!important}
+ #print{display:block}
+ .pg{page-break-after:always;break-after:page}
+ .pg:last-child{page-break-after:auto;break-after:auto}
+}
+.pf{width:100%;border-collapse:collapse;font-size:11.5px;table-layout:fixed;color:#000;font-family:'Malgun Gothic',Pretendard,sans-serif}
+.pf td{border:1px solid #000;padding:4px 6px;vertical-align:middle;line-height:1.35}
+.pf .lb{background:#E9EDF2;text-align:center;font-weight:700}
+.pf .ttl{font-size:21px;font-weight:800;text-align:center;letter-spacing:2px}
+.pf .pre{white-space:pre-wrap}
+.pf .nb{border:0}
+.pfno{display:flex;justify-content:space-between;font-size:10px;margin-top:4px;color:#000;font-family:'Malgun Gothic',sans-serif}
+</style>
+</head>
+<body>
+<div class="top">
+  <button class="hb" onclick="nav(1)" aria-label="메뉴">☰</button>
+  <div class="logo"><i>T</i>유효성 검증 <small>TJ-SP-Q209-F09</small></div>
+  <div class="menu" id="menu"></div>
+  <div class="sp"></div>
+  <div class="who"><span class="dot" id="dot" title="서버 동기화 상태"></span><span class="nm" id="whoTop"></span></div>
+</div>
+<div class="shade" id="shade" onclick="nav(0)"></div>
+<div class="nav" id="nav"><div id="navm"></div><div class="navwho" id="whoNav"></div></div>
+<main id="main"></main>
+<div id="print"></div>
+<div class="mb" id="mb" onclick="if(event.target===this)closeM()"><div class="md" id="md"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+'use strict';
+const VER='v1.2';
+const SB_URL='https://ebthltdmxpzlkfwvdloz.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidGhsdGRteHB6bGtmd3ZkbG96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNTcxNTQsImV4cCI6MjA5MDczMzE1NH0.bXqNpOtDMCFjuZROrIDm_3o0kHmNESs7EHOgGnFCxAM';
+const KV='tj_effect_eval_v1', LS='tj_effect_eval_v1', LSU='tj_effect_eval_user';
+const FORM_NO='TJ-SP-Q209-F09';
+const ITEMS=[
+ {g:'대책검증',t:'개선대책 적용후 불량 발생은 없는가?',m:10},
+ {g:'대책검증',t:'4M 변경의 변동사항 및 이상발생시 처리방법은 적절한가?',m:8},
+ {g:'대책검증',t:'개선안은 최소 1년이상 지속적으로 유효한 대책인가?',m:7},
+ {g:'유지관리',t:'개선대책의 이상여부 일상점검 확인 및 기록관리는 실시하는가?',m:10},
+ {g:'유지관리',t:'표준류는 수정/보완 사항이 반영되어 게시 관리되고 있는가?',m:8},
+ {g:'유지관리',t:'품질 문제 및 개선대책의 정보가 전사적으로 공유되고 있는가?',m:7},
+ {g:'확대적용 및 양산Test',t:'개선대책은 유사 차종또는제품,설비로 수평전개를 통한 확대 적용 실시하였는가?',m:15},
+ {g:'확대적용 및 양산Test',t:'개선공정의 해당제품 또는 유사제품, 설비 등을 실제 양산Test 실시 후 결과 확인 (설비가동: 최소1HR이상 또는 제품검사: 최소30EA이상)',m:15}
+];
+const SUM_MAX=20; // 점검자 종합의견 배점
+const BUCKET='kimsanggi85_database', FOLDER='effect_eval';
+const MON_START='2026-09-29'; // 사후 모니터링 적용 시작(이관분은 이 날짜 이후 도래분만 대상)
+const MONS=[3,6,12];
+const FCATS=['개선 전','개선 후','작업표준·게시','교육일지','양산 Test 성적','기타'];
+const MAXS=[...ITEMS.map(x=>x.m),SUM_MAX];
+const DEF_CFG={custs:['SBC','SKF ATC','SKF씰','세동','ATC','부강스프링','진양오일씰','일진'],dueDays:30,
+ users:[{pin:'4001',n:'강병주',r:'A'},{pin:'4003',n:'김상기',r:'A'},{pin:'4005',n:'오현민',r:'A'}],ua:'2000-01-01T00:00:00.000Z'};
+const SEED=[["2024-07-17", "2024-10-16", "김상기", "SKF씰", "3공장", "JA", "1952-0056-01", "다량", "▣BENDING 다이마모로 단높이 치수NG 발생됨", "1. 밴딩다이 마모주기 설정 하여 MES 등록 주기 도래시 알람발생\n2. 일별 X_R 관리도 체크 및 변동사항 점검실시", "2024-07-24", [10, 7, 7, 10, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "밴딩다이 마모지기 MES 등록 도래시 알람발생", "일별 X_R 관리도 체크", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要      3.일별 X_R 점검 강화"], ["2024-08-15", "2024-11-21", "김상기", "SKF ATC", "", "MSBU RING", "BDA-1106CA", "1EA", "1) 열처리 방청후 스틸재질의 적재바로 박스에 포장중 \n   모서리부에 찍힘\n2) 검사기 회전판 내에서 제품 걸림으로 인한 찍힘", "1) 열처리 포장 적재바 모서리부를 Round형태로 변경 \n2) 검사기 회전판 내에서 제품걸림 및 낙하 제품 폐기실시", "2024-08-22", [10, 6, 7, 9, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "열처리 포장 적재바 모서리부 Round상태 확인", "검사기 회전판걸림 제품은 즉시 폐기 되고있으며\n낙하품표준류 비치되어있음", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 16,500ea 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要"], ["2024-09-05", "2024-12-04", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1113AA", "1EA", "1.소재투입시 1피치씩 수작업으로 스템핑하므로 타발되는 위치가 어긋나는 경우가 발생됨 작업자는 수작업으로 스탬핑한 제품은 구분해서 폐기하여야 하나 구분이 미흡하여 혼입됨\n2.검사기에서 배출된 휨불량(진원도 or 높이) 재검시 높이게이지를 통과하며 육안검사시 미검출됨검사기에서 배출된 휨불량(진원도 or 높이) 재검시 높이게이지를 통과하며 육안검사시 미검출됨", "1) 소재 투입시 투입부분 상단에 마킹을 실시하여 수작업 스템핑 \n   제품이 식별될수 있도록 함\n2) 고품을 검사실 내에 한도견본으로 비치하고 검사자 교육을 실시함", "2024-09-05", [10, 6, 7, 9, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "시업전 NG마스터를 검사기에 넣어 점검실시중\n(NG마스터 검출됨)", "소재 투입시 투입부 상단 마킹후 스템핑 실시중", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품1 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要"], ["2024-09-10", "2024-12-09", "김상기", "SKF ATC", "", "MSBU RING", "OW-BDA-1179", "다량", "1) 기종교환시 잔량품 혼입으로 추정됨\n2) 잔량품은 외관검사만 실시하여 포장실시\n3) 혼입방지 교육을 실시하고 있으나 년1회만 실시", "1) 잔량품 투입시 사이즈표 대조확인\n2) 혼입 방지를 위한 작업자 교육훈련 분기별 실시\n3) 외관검사후 검사기 투입", "2024-09-13", [10, 6, 7, 9, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "혼입방지 교육을 분기별로 실시하고 있음", "잔량품 투입시 사이즈 대조표 확인후 잔량품 투입하고있음", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要  2. 작업전/후 구분관리 강화 要  3. 혼입방지를 위해 분기별 교육을 실시하고있음\n4. 잔량품 투입시 사이즈 대조표 사이즈확인 투입실시되어지고 있음"], ["2024-10-17", "", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1106CA", "1EA", "프레스 작업시 칩가루 찍힘으로 추정", "생산시 칩가루 찍힘을 방지하기 위하여 프레스 공정에 에어블로어를\n설치", "2024-10-18", [10, 6, 7, 9, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "금형일상점검 실시함", "금형일상저검 항목에 부쉬점검 항목 추가 관리", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要"], ["2024-10-28", "", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1113D", "2EA", "▣ #01(피어싱)의 스크랩이 부상하여   \n   #04(포밍) 공정으로 흘러가서 눌림 현상이 발생됨\n▣ 키커펀치가 약하여 스크랩을 밀어내지 못함\n    (#01 피어싱 공정)", "키커펀치의 핀 사이즈를 증대시킴\n(키커펀치 핀 2mm증대, 스프링 1.5배 증대)", "2024-11-01", [10, 7, 7, 9, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "금형일상점검 실시함", "금형일상저검 항목에 부쉬점검 항목 추가 관리", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要"], ["2024-11-20", "2024-11-21", "김상기", "SKF씰", "3공장", "A/S", "1839-629", "650EA", "▣내경피어싱 패드마모로 내경 하한치불량 발생됨\n52.19 ± 0.04 (G/A외)\nATC: 52.10~12(내경치수미달)", "1. 피어싱 마모주기 설정 하여 전산 등록 주기 도래시 알람발생\n2. GO/NO 게이지 제작하여 자주검사실시", "2024-11-25", [10, 7, 7, 10, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "키 피어싱 마모주기 설정 하여 전산 등록 주기 도래시 알람발생", "GO/NO 게이지 제작하여 자주검사실시", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要    3.순회검사 강화"], ["2025-03-04", "2025-03-06", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1106", "1EA", "IW-BDA-1156 제품혼입\n잔량품 투입전 대조 확인방법이 규정되지 않음", "잔량품 보관시 각아이템별 상세 식별표현장 비치후 보관장소로 이동함", "2025-03-06", [10, 7, 7, 9, 8, 7, 15, 15, 18], ["대책 적용후 불량 재발 없음", "잔량품 투입시 사이즈 대조확인 절차 수립되어 \n있으나 처리절차 게시 보완 要", "잔량품 식별표 비치 및 보관장소 이동 대책은 지속 유효함", "잔량품 보관시 식별표 부착 및 보관장소 이동여부\n일상점검 실시중", "잔량품 관리절차서 개정 완료 및 현장 게시 확인", "작업자 및 검사원 교육실시 완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과 혼입없음"], "1. 잔량품 관리절차서 개정 배포 및 현장 게시 확인\n2. 잔량품 투입시 사이즈 대조확인 일상점검 강화 要"], ["2025-05-13", "2025-05-14", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1106CB", "5EA", "1106 in 블랭킹 펀치 다이파손으로 그린 표시부 찍힘으로 슬립된 불량발생", "펀치다이 연마주기 10만타 → 9만타로 주기변경 연마 및 파손여부 확인으로 사전 불량예방", "2025-05-14", [10, 7, 7, 8, 8, 7, 15, 15, 18], ["대책 적용후 불량 재발 없음", "펀치다이 연마주기 변경(10만타→9만타)관련\n처리절차 게시 보완 要", "연마주기 단축 대책은 지속 유효함", "펀치다이 연마주기 및 파손여부 일상점검 기록관리 실시중", "불량발생시 알람벨 설치 완료, 부적합품 절차 표준류 반영 게시중", "작업자 교육실시 완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과 찍힘없음"], "1. 펀치다이 연마주기 준수 및 파손여부 일상점검 강화 要\n2. 부적합품 발생시 알람벨 작동여부 확인 要"], ["2025-07-23", "2025-08-05", "김상기", "SKF ATC", "", "MSBU RING", "OW-BDA-1179", "1EA", "OW-BDA-1156 제품혼입\n1179로 기종전환 후 1156을 발견할 경우 1179로 오판됨", "작업준비후 잔량확인 강화 (특히 검사기 내부 잔량확인후 QR코드인식)", "2025-08-05", [10, 7, 7, 9, 8, 7, 15, 15, 18], ["대책 적용후 불량 재발 없음", "기종전환시 잔량확인 절차 관련 처리절차 게시\n보완 要", "검사기 내부 잔량확인 및 QR코드인식 대책은 지속 유효함", "기종전환시 검사기 내부 잔량확인 및 QR코드인식 \n일상점검 실시중", "외상검점목록에 게이지 설정값 확인 항목 추가 \n관리중", "작업자 교육실시 완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과 혼입없음"], "1. 기종전환시 검사기 내부 잔량확인 철저 要\n2. 게이지 설정값 차별화 여부 지속관리 要"], ["2025-08-21", "2025-08-23", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1106CB", "1EA", "내경찍힘\n금형 취출부 검사와 하형 스크랩이 원활히 떨어지지 않음", "금형 하형 홀더 취출부의 각도를 기준 50°에서 30°로 가공 스크랩 취출시 하형 홀더에 간섭 받지 않고 취출", "2025-08-23", [10, 7, 7, 9, 8, 7, 15, 15, 18], ["대책 적용후 불량 재발 없음", "금형 하형 홀더 취출부 각도변경 관련 처리절차 게시 \n보완 要", "취출부 각도 50°→30° 변경 대책은 지속 유효함", "FMEA 불량사례 반영 완료, 금형 일상점검 기록관리 실시중", "분석의 표준 문서 업데이트 완료 및 현장 게시 확인", "검사자 및 생산작업자 교육훈련 실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과 찍힘없음"], "1. FMEA 불량 사례 반영 및 표준문서 업데이트 확인\n2. 금형 일상점검시 취출부 각도 상태 확인 강화 要"], ["2025-12-01", "2025-12-02", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1165A\nOW-BDA-1165A", "2EA", "인접한 설비 (좌, 우 1set) 에서 검사자 1명이 다른기종을 동시에 검사 작업할", "1.인접한 좌, 우 Set 로 배치된 설비에는 동일기종을 검사한다.", "2025-12-02", [10, 7, 7, 9, 8, 7, 15, 15, 18], ["대책 적용후 불량 재발 없음", "인접설비 동일기종 배치 관련 처리절차 게시 보완 要", "동일기종 검사 배치 대책은 지속 유효함", "제품혼입 방지를 위한 게이지 설정값 차별화 및 일상점검 실시중", "제품 이출시 라벨과 함께 이동 절차 표준류 반영 \n게시중", "작업자 교육실시 완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과 혼입없음"], "1. 인접설비 동일기종 배치여부 일상점검 강화 要\n2. 제품 이출시 라벨 부착 및 이동절차 준수 확인 要"], ["2026-01-22", "2026-06-10", "김상기", "SBC", "", "MSBU RING", "OW-BDA-1179", "다량", "OW-BDA-1179 혼입 (ATC 조립라인)\n발생: 투입 전 1차 확인만 존재, 이중 확인 체계 미흡\n유출: 오류 발생시 즉시 피드백(차단/알림) 체계 부재로 사후 대응 위주", "1. QR코드 기반 잔량 혼입방지 시스템 구축\n   A박스(QR)→수량 입력→B박스(QR) 스캔 후 자동 OK/NG 판정,\n   미스캔시 투입 불가(강제 게이트)\n2. OK/NG 판정 시뮬레이션 훈련교육 및 분기 1회 재교육", "2026-01-23", [10, 8, 7, 9, 8, 7, 13, 15, 18], ["QR 시스템 적용후 혼입 불량 재발 없음\n(태진재고 230,000EA 재검 결과 동일불량 없음)", "스캔 즉시 OK/NG 화면 표시, NG시 투입 차단\n이상발생 처리절차 운영중", "QR 강제 게이트 시스템 적용으로 작업자 임의 생략 불가,\n지속 유효한 대책임", "검사기록(일시/작업자/박스코드/수량/판정) Google Sheets실시간 저장, 월 1회 시스템 성능·운영데이터 점검 실시", "작업표준에 QR 스캔 및 OK/NG 판정 절차 반영 게시 관리중", "OK/NG 판정 시뮬레이션 훈련교육 실시 완료,\n분기 1회 재교육 계획 수립", "전기종 확대 전개 진행중\n(유사 혼입 위험 공정 포함 적용 검토)", "양산 적용후 검사기록 전수 타임스탬프 보존,\n혼입 NG 판정 0건 확인"], "1. QR 미스캔시 투입불가 강제 게이트 정상 작동 확인됨\n2. 월 1회 시스템 성능 점검 및 이상패턴 데이터 점검 지속 要\n3. 분기 1회 시뮬레이션 재교육 일정 준수 要"]];
+
+/* ---------- utils ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nowISO=()=>new Date().toISOString();
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const addDays=(s,n)=>{if(!s)return'';const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const dday=s=>{if(!s)return null;return Math.round((new Date(s+'T00:00:00')-new Date(today()+'T00:00:00'))/864e5)};
+const fmtD=s=>s?s.replace(/-/g,'.'):'';
+const locD=iso=>{if(!iso)return'';const d=new Date(iso);return isNaN(d)?'':d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const uid=()=>'E'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2200)}
+function normDate(v){
+  if(v==null||v==='')return'';
+  if(typeof v==='number'&&v>20000&&v<80000){const d=new Date(Math.round((v-25569)*864e5));return d.toISOString().slice(0,10)}
+  if(v instanceof Date&&!isNaN(v))return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');
+  const m=String(v).trim().match(/^(\d{2,4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})/);
+  if(!m)return'';let y=+m[1];if(y<100)y+=2000;
+  return y+'-'+String(+m[2]).padStart(2,'0')+'-'+String(+m[3]).padStart(2,'0');
+}
+
+/* ---------- state ---------- */
+let S={recs:[],del:{},cfg:JSON.parse(JSON.stringify(DEF_CFG))};
+let USER=null, VIEW='dash', CUR=null, FILT={y:'',c:'',s:'',q:''};
+try{USER=JSON.parse(localStorage.getItem(LSU)||'null')}catch(e){}
+
+function seedRecs(){
+  return SEED.map((a,i)=>{
+    const [occ,chk,insp,cust,site,car,part,qty,cause,action,done,scores,ops,summary]=a;
+    return {id:'seed-'+String(i+1).padStart(2,'0'),cust,site,car,part,occDate:occ,qty,cause,action,doneDate:done,
+      dueDate:addDays(done,30),chkDate:chk,inspector:insp,scores,opinions:ops,summary,
+      appr:{review:null,approve:null},files:[],acts:[],mons:{},xdel:{},monFrom:MON_START,round:1,parent:'',legacy:1,created:'2000-01-01T00:00:00.000Z',ua:'2000-01-01T00:00:00.000Z',src:'엑셀 이관'};
+  });
+}
+function ensureRec(r){
+  if(!Array.isArray(r.files))r.files=[];if(!Array.isArray(r.acts))r.acts=[];
+  if(!r.mons||typeof r.mons!=='object')r.mons={};if(!r.xdel||typeof r.xdel!=='object')r.xdel={};
+  if(!r.monFrom&&(r.legacy||/^엑셀/.test(r.src||'')))r.monFrom=MON_START;
+  return r;
+}
+// 같은 건을 여러 기기에서 고쳐도 증빙·후속조치·모니터링 기록은 합쳐서 보존
+function mergeRec(o,r){
+  const w=(r.ua||'')>(o.ua||'')?r:o,l=w===r?o:r;
+  const x={...w,xdel:{...(l.xdel||{}),...(w.xdel||{})}};
+  const un=(A,B)=>{const mm={};for(const it of [...(A||[]),...(B||[])]){const p=mm[it.id];if(!p||(it.ua||it.at||'')>(p.ua||p.at||''))mm[it.id]=it}
+    return Object.values(mm).filter(it=>!x.xdel[it.id]).sort((a,b)=>(a.at||'').localeCompare(b.at||''))};
+  x.files=un(l.files,w.files);x.acts=un(l.acts,w.acts);
+  x.mons={...(l.mons||{})};for(const k in (w.mons||{}))if(!x.mons[k]||(w.mons[k].at||'')>=(x.mons[k].at||''))x.mons[k]=w.mons[k];
+  for(const k in x.mons)if(x.xdel['mon'+k]&&x.xdel['mon'+k]>=(x.mons[k].at||''))delete x.mons[k];
+  return x;
+}
+function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+function loadLocal(){try{const s=JSON.parse(localStorage.getItem(LS)||'null');if(s&&Array.isArray(s.recs))return s}catch(e){}return null}
+function mergeState(a,b){
+  if(!a)return b;if(!b)return a;
+  const del={...(a.del||{})};for(const k in (b.del||{}))if(!del[k]||b.del[k]>del[k])del[k]=b.del[k];
+  const m={};for(const r0 of [...(a.recs||[]),...(b.recs||[])]){const r=ensureRec(r0);const o=m[r.id];m[r.id]=o?mergeRec(o,r):r}
+  const recs=Object.values(m).filter(r=>!del[r.id]);
+  const ca=a.cfg||DEF_CFG,cb=b.cfg||DEF_CFG;
+  const cfg=((cb.ua||'')>(ca.ua||''))?cb:ca;
+  return {recs,del,cfg:{...DEF_CFG,...cfg}};
+}
+
+/* ---------- 고객사 명칭 변경 규칙 ---------- */
+// SKF ATC → SBC : 2026년 발생분부터 적용
+const CUST_RENAME=[{from:'SKF ATC',to:'SBC',since:'2026-01-01'}];
+const cnorm=c=>String(c||'').replace(/\s/g,'').toUpperCase();
+function custRule(r){
+  for(const x of CUST_RENAME){if(cnorm(r.cust)===cnorm(x.from)&&(r.occDate||'')>=x.since){r.cust=x.to;return true}}
+  return false;
+}
+function migrate(st){
+  let ch=false;
+  for(const r of st.recs)if(custRule(r)){r.ua=nowISO();ch=true}
+  const cs=st.cfg.custs||[];
+  for(const x of CUST_RENAME)if(!cs.includes(x.to)){cs.unshift(x.to);st.cfg.custs=cs;st.cfg.ua=nowISO();ch=true}
+  return ch;
+}
+
+/* ---------- server ---------- */
+const H={apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'};
+function setDot(c,t){const d=$('#dot');d.className='dot '+c;d.title=t||''}
+async function pullServer(){
+  const r=await fetch(SB_URL+'/rest/v1/kv_store?select=value,updated_at&key=eq.'+KV,{headers:H,cache:'no-store'});
+  if(!r.ok)throw new Error('pull '+r.status);
+  const j=await r.json();return j.length?j[0].value:null;
+}
+async function putServer(v){
+  const r=await fetch(SB_URL+'/rest/v1/kv_store?on_conflict=key',{method:'POST',headers:{...H,Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({key:KV,value:v,updated_at:nowISO()})});
+  if(!r.ok)throw new Error('push '+r.status);
+}
+let pushT=null,syncing=false,dirty=false;
+function schedulePush(){dirty=true;clearTimeout(pushT);pushT=setTimeout(sync,700)}
+async function sync(first){
+  if(syncing){dirty=true;return}
+  syncing=true;setDot('busy','동기화 중…');
+  try{
+    const sv=await pullServer();
+    const before=JSON.stringify(S);
+    let merged;
+    if(!sv){merged=S.recs.length?S:{...S,recs:seedRecs()}}
+    else if(S._fresh){merged=mergeState({recs:[],del:{},cfg:DEF_CFG},sv)} // 새 기기: 서버 정본 채택
+    else merged=mergeState(S,sv);
+    delete merged._fresh;
+    if(migrate(merged))dirty=true;
+    S=merged;saveLocal();
+    const needPush=!sv||dirty||JSON.stringify(sv)!==JSON.stringify(S);
+    dirty=false;
+    if(needPush)await putServer(S);
+    setDot('ok','동기화 완료 '+new Date().toLocaleTimeString('ko-KR')+' · '+S.recs.length+'건');
+    if(JSON.stringify(S)!==before||first)render(true);
+  }catch(e){console.warn(e);setDot('err','동기화 실패 — 로컬 저장됨 ('+e.message+')');}
+  syncing=false;
+  if(dirty){dirty=false;schedulePush()}
+}
+
+/* ---------- derived ---------- */
+function total(r){return (r.scores||[]).reduce((a,b)=>a+(+b||0),0)}
+function scored(r){return (r.scores||[]).some(v=>v!==null&&v!==''&&v!==undefined)}
+function complete(r){return (r.scores||[]).length===9&&r.scores.every(v=>v!==null&&v!==''&&v!==undefined)}
+function judge(r){if(!complete(r))return null;const t=total(r);return t>=80?'A':t>=60?'R1':'R2'}
+const JT={A:['Accept','ok'],R1:['Reject·보완','w'],R2:['Reject·재수립','ng']};
+function status(r){
+  if(!complete(r))return 'wait';
+  if(r.appr&&r.appr.approve)return 'done';
+  if(r.legacy&&!(r.appr&&r.appr.review))return 'done'; // 엑셀 이관분(종이 결재 완료)
+  return 'appr';
+}
+const STT={wait:['평가대기','n'],appr:['결재대기','b'],done:['승인완료','ok']};
+const sttOf=r=>r.legacy&&status(r)==='done'&&!(r.appr&&r.appr.approve)?['이관(종이결재)','ok']:STT[status(r)];
+function custLabel(r){return (r.cust||'')+(r.site?' '+r.site:'')}
+function yearOf(r){return (r.occDate||r.chkDate||'').slice(0,4)}
+function recNo(r){
+  const y=yearOf(r)||'----';
+  const same=S.recs.filter(x=>yearOf(x)===yearOf(r)).sort((a,b)=>(a.occDate||'').localeCompare(b.occDate||'')||(a.created||'').localeCompare(b.created||''));
+  const k=same.findIndex(x=>x.id===r.id);
+  return k<0?'EV-'+y+'-(신규)':'EV-'+y+'-'+String(k+1).padStart(2,'0');
+}
+function addMonths(s,n){if(!s)return'';const d=new Date(s+'T00:00:00'),dd=d.getDate();d.setMonth(d.getMonth()+n);if(d.getDate()<dd)d.setDate(0);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function monList(r){
+  if(!r.doneDate)return[];
+  return MONS.map(m=>{const due=addMonths(r.doneDate,m);return{m,due,res:(r.mons||{})[m]||null,active:!r.monFrom||due>=r.monFrom}});
+}
+const monPending=r=>monList(r).filter(x=>x.active&&!x.res);
+const monNG=r=>monList(r).some(x=>x.res&&x.res.res==='NG');
+const openActs=r=>(r.acts||[]).filter(a=>!a.done);
+const evCover=r=>{const s=new Set((r.files||[]).filter(f=>f.item!==''&&f.item!=null).map(f=>+f.item));return ITEMS.filter((x,i)=>s.has(i)).length};
+function monBadges(r){
+  const L=monList(r);if(!L.length)return'<span class="muted">-</span>';
+  return L.map(x=>{let c='n',t='◷';if(!x.active){c='n';t='–'}else if(x.res){c=x.res.res==='OK'?'ok':'ng';t=x.res.res==='OK'?'✓':'✗'}else if(dday(x.due)<0){c='w';t='!'}
+    return`<span class="tag ${c}" title="${x.m}개월 ${x.due}${x.active?'':' (이관 전 도래분·대상외)'}" style="padding:1px 6px;font-size:11px">${x.m}M${t}</span>`}).join(' ');
+}
+const canEdit=()=>!!USER;
+const isAppr=()=>USER&&USER.r==='A';
+
+/* ---------- nav ---------- */
+const MENUS=[['dash','현황판'],['list','검증 목록'],['new','신규 등록'],['data','데이터 관리'],['cfg','기준정보']];
+function nav(o){$('#nav').classList.toggle('open',!!o);$('#shade').classList.toggle('open',!!o)}
+function go(v,id){
+  if(v==='new'){if(!canEdit()){login(()=>go('new'));return}CUR=newRec();v='form'}
+  else if(v==='form'){CUR=JSON.parse(JSON.stringify(S.recs.find(r=>r.id===id)))}
+  VIEW=v;nav(0);render();window.scrollTo(0,0);
+}
+function renderChrome(){
+  const cur=VIEW==='form'?(CUR&&CUR._new?'new':'list'):VIEW;
+  $('#menu').innerHTML=MENUS.map(([k,n])=>`<button class="${k===cur?'on':''}" onclick="go('${k}')">${n}</button>`).join('');
+  $('#navm').innerHTML='<div style="padding:0 20px 12px;font-weight:700"><span style="color:var(--amber)">■</span> 유효성 검증 <span class="muted" style="color:#9fb0c8">'+VER+'</span></div>'+MENUS.map(([k,n])=>`<button class="m ${k===cur?'on':''}" onclick="go('${k}')">${n}</button>`).join('');
+  const w=USER?`<b>${esc(USER.n)}</b> <span class="tag ${USER.r==='A'?'b':'n'}" style="font-size:11px">${USER.r==='A'?'승인자':'작성자'}</span> <button class="tbtn" onclick="logout()">로그아웃</button>`:`<button class="tbtn" onclick="login()">🔒 로그인</button>`;
+  $('#whoTop').innerHTML=w;$('#whoNav').innerHTML=w;
+}
+function render(soft){
+  renderChrome();
+  if(soft&&VIEW==='form')return; // 입력 중 화면은 유지
+  const f={dash:vDash,list:vList,form:vForm,data:vData,cfg:vCfg}[VIEW]||vDash;
+  $('#main').innerHTML=f();
+  if(VIEW==='form')bindForm();
+}
+
+/* ---------- login ---------- */
+let pinBuf='',pinCb=null;
+function login(cb){
+  pinBuf='';pinCb=cb||null;
+  openM(`<h3>PIN 로그인</h3><div class="muted">개인 PIN 4자리를 입력하세요. (승인자: 검토·승인·삭제 가능)</div>
+  <div class="pindisp" id="pd"></div>
+  <div class="pinpad">${[1,2,3,4,5,6,7,8,9,'C',0,'←'].map(k=>`<button onclick="pinKey('${k}')">${k}</button>`).join('')}</div>
+  <div style="margin-top:12px;text-align:right"><button class="btn" onclick="closeM()">닫기</button></div>`);
+}
+function pinKey(k){
+  if(k==='C')pinBuf='';else if(k==='←')pinBuf=pinBuf.slice(0,-1);else if(pinBuf.length<6)pinBuf+=k;
+  $('#pd').textContent='●'.repeat(pinBuf.length);
+  if(pinBuf.length>=4){
+    const u=(S.cfg.users||[]).find(x=>x.pin===pinBuf);
+    if(u){USER={n:u.n,r:u.r};localStorage.setItem(LSU,JSON.stringify(USER));closeM();toast(u.n+'님 로그인');const cb=pinCb;pinCb=null;render();if(cb)cb()}
+    else if(pinBuf.length>=6||!(S.cfg.users||[]).some(x=>x.pin.startsWith(pinBuf))){toast('PIN이 올바르지 않습니다');pinBuf='';$('#pd').textContent=''}
+  }
+}
+document.addEventListener('keydown',e=>{if($('#pd')&&$('#mb').classList.contains('open')){if(/^\d$/.test(e.key))pinKey(e.key);else if(e.key==='Backspace')pinKey('←')}});
+function logout(){USER=null;localStorage.removeItem(LSU);toast('로그아웃');if(VIEW==='form')go('list');else render()}
+function openM(h){$('#md').innerHTML=h;$('#mb').classList.add('open')}
+function closeM(){$('#mb').classList.remove('open')}
+
+/* ---------- dashboard ---------- */
+function vDash(){
+  const R=S.recs, y=String(new Date().getFullYear());
+  const done=R.filter(complete), wait=R.filter(r=>!complete(r)), apw=R.filter(r=>status(r)==='appr');
+  const acc=done.filter(r=>judge(r)==='A').length, rej=done.length-acc;
+  const avg=done.length?(done.reduce((a,r)=>a+total(r),0)/done.length).toFixed(1):'-';
+  const thisY=R.filter(r=>yearOf(r)===y).length;
+  const k=(l,v,u,c)=>`<div class="kpi ${c||''}"><div class="l">${l}</div><div class="v readout">${v}<small>${u||''}</small></div></div>`;
+  let h=`<div class="ph"><h2>품질개선 유효성 검증 현황</h2><span class="code">${FORM_NO} · 고객사 통합관리</span><div class="sp"></div><button class="btn p" onclick="go('new')">＋ 신규 등록</button></div>`;
+  const acts=[];R.forEach(r=>openActs(r).forEach(a=>acts.push({r,a})));acts.sort((x,y)=>(x.a.due||'9').localeCompare(y.a.due||'9'));
+  const mons=[];R.forEach(r=>monPending(r).forEach(m=>{const d=dday(m.due);if(d<=30)mons.push({r,m,d})}));mons.sort((a,b)=>a.d-b.d);
+  const ngN=R.filter(monNG).length;
+  const actOver=acts.filter(x=>x.a.due&&dday(x.a.due)<0).length, monOver=mons.filter(x=>x.d<0).length;
+  h+=`<div class="kpis">${k('전체 등록',R.length,'건')}${k('평가 대기',wait.length,'건','a')}${k('결재 대기',apw.length,'건')}${k('要 후속조치 미완료',acts.length,actOver?`건 · 기한경과 ${actOver}`:'건','a')}${k('재발확인 도래(30일)',mons.length,monOver?`건 · 경과 ${monOver}`:'건','a')}${k('Reject · 재발',rej+ngN,'건','r')}</div>`;
+  // 평가대기
+  const wl=wait.slice().sort((a,b)=>(a.dueDate||'9').localeCompare(b.dueDate||'9'));
+  h+=`<div class="grid2"><div class="panel"><h3>⏳ 평가 대기 <span class="muted">평가예정일 순</span></h3>`;
+  h+=wl.length?`<div class="tw"><table class="t"><tr><th>품명</th><th>고객사</th><th>대책완료</th><th>평가예정</th><th class="c">D-day</th></tr>${wl.map(r=>{const d=dday(r.dueDate);return`<tr class="cl" onclick="go('form','${r.id}')"><td><b>${esc(r.part)}</b></td><td>${esc(custLabel(r))}</td><td class="nw">${fmtD(r.doneDate)}</td><td class="nw">${fmtD(r.dueDate)}</td><td class="c">${ddTag(d)}</td></tr>`}).join('')}</table></div>`:'<div class="muted">평가 대기 건이 없습니다.</div>';
+  h+=`</div><div class="panel"><h3>📝 결재 대기</h3>`;
+  h+=apw.length?`<div class="tw"><table class="t"><tr><th>품명</th><th>고객사</th><th>점검일</th><th class="c">점수</th><th>진행</th></tr>${apw.map(r=>`<tr class="cl" onclick="go('form','${r.id}')"><td><b>${esc(r.part)}</b></td><td>${esc(custLabel(r))}</td><td class="nw">${fmtD(r.chkDate)}</td><td class="c readout">${total(r)}</td><td>${r.appr&&r.appr.review?'<span class="tag b">검토완료→승인대기</span>':'<span class="tag n">검토대기</span>'}</td></tr>`).join('')}</table></div>`:'<div class="muted">결재 대기 건이 없습니다.</div>';
+  h+=`</div></div>`;
+  h+=`<div class="grid2"><div class="panel"><h3>📌 要 후속조치 미완료 <span class="muted">기한 순</span></h3>`;
+  h+=acts.length?`<div class="tw"><table class="t"><tr><th>품명</th><th>조치 내용</th><th>담당</th><th class="c">기한</th></tr>${acts.slice(0,12).map(({r,a})=>`<tr class="cl" onclick="go('form','${r.id}')"><td class="nw"><b>${esc(r.part.split('\n')[0])}</b></td><td><div class="ell" style="max-width:260px">${esc(a.text)}</div></td><td class="nw">${esc(a.owner)||'<span class="muted">미지정</span>'}</td><td class="c">${ddTag(dday(a.due))}</td></tr>`).join('')}</table></div>${acts.length>12?`<div class="muted" style="margin-top:6px">외 ${acts.length-12}건 — 목록에서 '要 미완료' 필터</div>`:''}`:'<div class="muted">미완료 후속조치가 없습니다.</div>';
+  h+=`</div><div class="panel"><h3>🔁 재발 모니터링 도래 <span class="muted">대책완료 후 3·6·12개월 · 30일 이내</span></h3>`;
+  h+=mons.length?`<div class="tw"><table class="t"><tr><th>품명</th><th>고객사</th><th class="c">차수</th><th>확인 예정</th><th class="c">D-day</th></tr>${mons.map(({r,m,d})=>`<tr class="cl" onclick="go('form','${r.id}')"><td class="nw"><b>${esc(r.part.split('\n')[0])}</b></td><td>${esc(custLabel(r))}</td><td class="c">${m.m}개월</td><td class="nw">${fmtD(m.due)}</td><td class="c">${ddTag(d)}</td></tr>`).join('')}</table></div>`:'<div class="muted">30일 이내 도래한 재발 확인이 없습니다.</div>';
+  h+=`</div></div>`;
+  // 연도×고객사
+  const ys=[...new Set(R.map(yearOf).filter(Boolean))].sort();
+  const cs=[...new Set(R.map(r=>r.cust).filter(Boolean))].sort();
+  h+=`<div class="grid2"><div class="panel"><h3>📊 연도 · 고객사별 건수 <span class="muted">평균점수 ${avg}점</span></h3><div class="tw"><table class="t"><tr><th>고객사</th>${ys.map(y=>`<th class="c">${y}</th>`).join('')}<th class="c">합계</th><th class="c">평균점수</th></tr>`;
+  for(const c of cs){const rr=R.filter(r=>r.cust===c);const dn=rr.filter(complete);h+=`<tr><td><b>${esc(c)}</b></td>${ys.map(y=>{const n=rr.filter(r=>yearOf(r)===y).length;return`<td class="c readout">${n||'<span class="muted">-</span>'}</td>`}).join('')}<td class="c readout"><b>${rr.length}</b></td><td class="c readout">${dn.length?(dn.reduce((a,r)=>a+total(r),0)/dn.length).toFixed(1):'-'}</td></tr>`}
+  h+=`<tr><td><b>합계</b></td>${ys.map(y=>`<td class="c readout"><b>${R.filter(r=>yearOf(r)===y).length}</b></td>`).join('')}<td class="c readout"><b>${R.length}</b></td><td class="c readout">${avg}</td></tr></table></div></div>`;
+  // 항목별 달성률
+  h+=`<div class="panel"><h3>🎯 체크항목별 평균 달성률 <span class="muted">평점/배점 · 낮은 항목이 개선 포인트</span></h3>`;
+  const labs=[...ITEMS.map((x,i)=>(i+1)+'. '+x.t),'종합의견'];
+  h+=labs.map((l,i)=>{const v=done.length?done.reduce((a,r)=>a+(+r.scores[i]||0),0)/done.length/MAXS[i]*100:0;return`<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:12px"><span class="ell" style="max-width:85%">${esc(l)}</span><b class="readout">${done.length?v.toFixed(0)+'%':'-'}</b></div><div class="bar"><i class="${v<90?'lo':''}" style="width:${v}%"></i></div></div>`}).join('');
+  h+=`</div></div>`;
+  // 최근
+  const rc=R.slice().sort((a,b)=>(b.occDate||'').localeCompare(a.occDate||'')).slice(0,6);
+  h+=`<div class="panel"><h3>🕘 최근 등록 <span class="sp"></span><button class="btn s" onclick="go('list')">전체 보기</button></h3>${listTable(rc)}</div>`;
+  return h;
+}
+function ddTag(d){if(d===null)return'<span class="tag n">미정</span>';if(d<0)return`<span class="tag ng">D+${-d}</span>`;if(d<=7)return`<span class="tag w">D-${d}</span>`;return`<span class="tag n">D-${d}</span>`}
+
+/* ---------- list ---------- */
+function filtered(){
+  const q=FILT.q.trim().toLowerCase();
+  return S.recs.filter(r=>{
+    if(FILT.y&&yearOf(r)!==FILT.y)return false;
+    if(FILT.c&&r.cust!==FILT.c)return false;
+    if(FILT.s){if(['wait','appr','done'].includes(FILT.s)){if(status(r)!==FILT.s)return false}
+      else if(FILT.s==='act'){if(!openActs(r).length)return false}
+      else if(FILT.s==='mon'){if(!monPending(r).some(m=>dday(m.due)<=30))return false}
+      else if(FILT.s==='ng'){if(!monNG(r))return false}
+      else if(FILT.s==='noev'){if((r.files||[]).length)return false}
+      else if(judge(r)!==FILT.s)return false}
+    if(q&&![r.part,r.car,r.cause,r.action,r.cust,r.site,r.summary].join(' ').toLowerCase().includes(q))return false;
+    return true;
+  }).sort((a,b)=>(b.occDate||'').localeCompare(a.occDate||''));
+}
+function postBadges(r){
+  const oa=openActs(r).length,nf=(r.files||[]).length;
+  return `${monBadges(r)} ${oa?`<span class="tag w" style="padding:1px 6px;font-size:11px">要 ${oa}</span>`:''} <span class="tag ${nf?'b':'n'}" style="padding:1px 6px;font-size:11px" title="증빙자료">📎${nf}</span>`;
+}
+function listTable(rows){
+  if(!rows.length)return'<div class="muted" style="padding:14px 0">해당 자료가 없습니다.</div>';
+  const pc=`<div class="tw tbl-pc"><table class="t"><tr><th>관리번호</th><th>발생일</th><th>고객사</th><th>차종</th><th>품명</th><th>불량내용/원인</th><th>대책완료</th><th>점검일</th><th class="c">점수</th><th class="c">판정</th><th class="c">상태</th><th>사후관리</th></tr>${rows.map(r=>{const j=judge(r),st=sttOf(r);return`<tr class="cl" onclick="go('form','${r.id}')"><td class="nw muted">${recNo(r)}${r.round>1?' <span class="tag w">재'+(r.round-1)+'</span>':''}</td><td class="nw">${fmtD(r.occDate)}</td><td class="nw">${esc(custLabel(r))}</td><td class="nw">${esc(r.car)}</td><td class="nw"><b>${esc(r.part).replace(/\n/g,'<br>')}</b></td><td><div class="ell">${esc((r.cause||'').split('\n')[0])}</div></td><td class="nw">${fmtD(r.doneDate)}</td><td class="nw">${fmtD(r.chkDate)||'<span class="muted">-</span>'}</td><td class="c readout"><b>${complete(r)?total(r):'-'}</b></td><td class="c">${j?`<span class="tag ${JT[j][1]}">${JT[j][0]}</span>`:'-'}</td><td class="c"><span class="tag ${st[1]}">${st[0]}</span></td><td class="nw">${postBadges(r)}</td></tr>`}).join('')}</table></div>`;
+  const mc=`<div class="cards">${rows.map(r=>{const j=judge(r),st=sttOf(r);return`<div class="card" onclick="go('form','${r.id}')"><div class="t1"><div><div class="pn">${esc(r.part).replace(/\n/g,' / ')}</div><div class="muted">${recNo(r)} · ${esc(custLabel(r))} · ${esc(r.car)}</div></div><div class="rt"><div class="readout" style="font-size:20px;font-weight:800">${complete(r)?total(r):'-'}</div></div></div><div class="ln">${esc((r.cause||'').split('\n')[0])}</div><div class="ft"><span class="tag ${st[1]}">${st[0]}</span>${j?`<span class="tag ${JT[j][1]}">${JT[j][0]}</span>`:''}<span class="muted">발생 ${fmtD(r.occDate)} · 점검 ${fmtD(r.chkDate)||'-'}</span></div><div class="ft">${postBadges(r)}</div></div>`}).join('')}</div>`;
+  return pc+mc;
+}
+function vList(){
+  const ys=[...new Set(S.recs.map(yearOf).filter(Boolean))].sort().reverse();
+  const cs=[...new Set([...S.cfg.custs,...S.recs.map(r=>r.cust)].filter(Boolean))];
+  const rows=filtered();
+  const o=(v,l,cur)=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(l)}</option>`;
+  return `<div class="ph"><h2>유효성 검증 목록</h2><span class="code">${rows.length}건</span><div class="sp"></div>
+  <button class="btn" onclick="printRecs(filtered())">🖨 현재 목록 일괄 인쇄</button><button class="btn" onclick="exportXlsx(filtered())">⬇ 엑셀</button><button class="btn p" onclick="go('new')">＋ 신규 등록</button></div>
+  <div class="panel"><div class="flt">
+   <select onchange="FILT.y=this.value;render()">${o('','전체 연도',FILT.y)}${ys.map(y=>o(y,y+'년',FILT.y)).join('')}</select>
+   <select onchange="FILT.c=this.value;render()">${o('','전체 고객사',FILT.c)}${cs.map(c=>o(c,c,FILT.c)).join('')}</select>
+   <select onchange="FILT.s=this.value;render()">${o('','전체 상태',FILT.s)}${o('wait','평가대기',FILT.s)}${o('appr','결재대기',FILT.s)}${o('done','승인완료',FILT.s)}${o('A','판정: Accept',FILT.s)}${o('R1','판정: Reject·보완',FILT.s)}${o('R2','판정: Reject·재수립',FILT.s)}${o('act','要 후속조치 미완료',FILT.s)}${o('mon','재발확인 도래(30일)',FILT.s)}${o('ng','재발(NG) 발생',FILT.s)}${o('noev','증빙 미첨부',FILT.s)}</select>
+   <input id="fq" placeholder="품명·차종·불량내용 검색" value="${esc(FILT.q)}" oninput="FILT.q=this.value;clearTimeout(window._qt);window._qt=setTimeout(()=>{const p=this.selectionStart;render();const e=$('#fq');e.focus();e.setSelectionRange(p,p)},250)" style="min-width:200px;flex:1">
+  </div>${listTable(rows)}</div>`;
+}
+
+/* ---------- form ---------- */
+function newRec(){
+  return {id:uid(),_new:true,cust:S.cfg.custs[0]||'',site:'',car:'',part:'',occDate:today(),qty:'',cause:'',action:'',doneDate:'',dueDate:'',
+   chkDate:'',inspector:USER?USER.n:'',scores:Array(9).fill(null),opinions:Array(8).fill(''),summary:'',appr:{review:null,approve:null},files:[],acts:[],mons:{},xdel:{},round:1,parent:'',created:nowISO(),ua:nowISO(),src:'앱 등록'};
+}
+function opts(i){ // 과거 평가의견 자동완성
+  const m={};for(const r of S.recs){const v=(r.opinions||[])[i];if(v)m[v]=(m[v]||0)+1}
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,12).map(x=>x[0]);
+}
+function vForm(){
+  const r=CUR,ed=canEdit(),dis=ed?'':'disabled';
+  const cs=[...new Set([...S.cfg.custs,r.cust].filter(Boolean))];
+  const lockNote=!ed?`<div class="hint">🔒 조회 모드입니다. 등록·수정하려면 <a href="#" onclick="login(()=>render());return false">로그인</a>하세요.</div>`:'';
+  const apNote=(r.appr&&(r.appr.review||r.appr.approve))&&ed?`<div class="hint">결재가 진행된 건입니다. 내용을 수정해 저장하면 검토·승인이 초기화되어 재결재가 필요합니다.</div>`:'';
+  const f=(k,l,t,cls,req)=>`<div class="f ${cls||''}"><label class="${req?'req':''}">${l}</label><input id="f_${k}" type="${t||'text'}" value="${esc(r[k])}" ${dis}></div>`;
+  let h=`<div class="ph"><button class="btn s" onclick="go('list')">← 목록</button><h2>${r._new?'신규 등록':esc(r.part.split('\n')[0])}</h2><span class="code">${r._new?'':recNo(r)} ${r.round>1?'· 재평가 '+(r.round-1)+'차':''} · ${esc(r.src||'')}</span></div>${lockNote}${apNote}
+  <div class="panel"><h3>① 개선 대상 정보</h3><div class="fg">
+   <div class="f"><label class="req">고객사</label><select id="f_cust" ${dis}>${cs.map(c=>`<option ${c===r.cust?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
+   ${f('site','발생처 상세 (공장·라인)')}${f('car','차종')}${f('part','품명(품번)','text','','1')}
+   ${f('occDate','발생일','date','','1')}${f('qty','발생수량')}${f('doneDate','대책 완료일','date')}${f('dueDate','평가 예정일','date')}
+   <div class="f span2"><label class="req">불량 발생내용 / 원인</label><textarea id="f_cause" ${dis}>${esc(r.cause)}</textarea></div>
+   <div class="f span2"><label class="req">개선 대책</label><textarea id="f_action" ${dis}>${esc(r.action)}</textarea></div>
+  </div></div>
+  <div class="panel"><h3>② 유효성 검증 체크리스트 <span class="sp"></span><span class="muted">80점 이상 Accept</span></h3>
+   <div class="fg" style="margin-bottom:12px">${f('chkDate','점검일','date')}${f('inspector','점검자')}</div>
+   <div class="tbl-pc"><table class="ck"><tr><th>구분</th><th>NO</th><th>체크 항목</th><th>평가 의견</th><th>평점</th><th>배점</th></tr>`;
+  let lastG='';
+  ITEMS.forEach((it,i)=>{
+    const span=ITEMS.filter(x=>x.g===it.g).length;
+    h+=`<tr>${it.g!==lastG?`<td class="g" rowspan="${span}">${esc(it.g)}</td>`:''}<td class="c">${i+1}</td><td style="width:34%">${esc(it.t)} <span data-evc="${i}"></span></td><td><textarea data-op="${i}" list="dl${i}" ${dis}>${esc(r.opinions[i])}</textarea></td><td class="c"><input class="sc" data-sc="${i}" inputmode="numeric" value="${r.scores[i]??''}" ${dis}></td><td class="c readout">${it.m}</td></tr>`;
+    lastG=it.g;
+  });
+  h+=`<tr><td class="g">점검자<br>종합의견</td><td colspan="3"><textarea data-sum="1" style="min-height:70px" ${dis}>${esc(r.summary)}</textarea></td><td class="c"><input class="sc" data-sc="8" inputmode="numeric" value="${r.scores[8]??''}" ${dis}></td><td class="c readout">${SUM_MAX}</td></tr></table></div>
+   <div class="cards">${ITEMS.map((it,i)=>`<div class="cki"><div class="muted">${esc(it.g)} · ${i+1}</div><div class="q">${esc(it.t)} <span data-evc="${i}"></span></div><textarea data-op="${i}" ${dis} style="width:100%;border:1px solid #D0D5DD;border-radius:5px;padding:6px;min-height:44px">${esc(r.opinions[i])}</textarea><div class="row"><span class="muted">평점</span><input class="sc" data-sc="${i}" inputmode="numeric" value="${r.scores[i]??''}" ${dis} style="width:70px;text-align:center;border:1px solid #C5CCD6;border-radius:5px;padding:8px;font-weight:700;font-size:16px"><span class="muted">/ ${it.m}</span>${ed?`<button class="btn s" type="button" onclick="fullSc(${i})">만점</button>`:''}</div></div>`).join('')}
+    <div class="cki"><div class="q">점검자 종합의견</div><textarea data-sum="1" ${dis} style="width:100%;border:1px solid #D0D5DD;border-radius:5px;padding:6px;min-height:70px">${esc(r.summary)}</textarea><div class="row"><span class="muted">평점</span><input class="sc" data-sc="8" inputmode="numeric" value="${r.scores[8]??''}" ${dis} style="width:70px;text-align:center;border:1px solid #C5CCD6;border-radius:5px;padding:8px;font-weight:700;font-size:16px"><span class="muted">/ ${SUM_MAX}</span></div></div>
+   </div>
+   ${ITEMS.map((it,i)=>`<datalist id="dl${i}">${opts(i).map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`).join('')}
+   <div class="tot" id="tot"></div>
+  </div>
+  <div class="panel"><h3>③ 증빙자료 <span class="muted">개선 전·후 사진, 작업표준, 교육일지, 양산 Test 성적 — 체크항목별 연결</span></h3><div id="evi"></div></div>
+  <div class="panel"><h3>④ 要 후속조치 <span class="muted">점검자 지적사항 → 담당·기한·완료 확인</span></h3><div id="acts"></div></div>
+  <div class="panel"><h3>⑤ 사후 재발 모니터링 <span class="muted">대책완료 후 3·6·12개월 재발 여부 확인</span></h3><div id="mons"></div><div id="rcr"></div></div>
+  <div class="panel"><h3>⑥ 결재</h3><div class="appr" id="appr"></div></div>
+  <div class="stick">
+   ${ed?`<button class="btn p" onclick="saveForm()">💾 저장</button>`:''}
+   <button class="btn" onclick="printRecs([collect(true)])">🖨 인쇄 / PDF</button>
+   ${!r._new&&ed&&((judge(r)&&judge(r)!=='A')||monNG(r))?`<button class="btn am" onclick="reEval()">↻ 재평가 등록</button>`:''}
+   <div class="sp" style="flex:1"></div>
+   ${!r._new&&isAppr()?`<button class="btn d" onclick="delRec()">삭제</button>`:''}
+   <button class="btn" onclick="go('list')">닫기</button>
+  </div>`;
+  return h;
+}
+function bindForm(){
+  const m=$('#main');
+  m.addEventListener('input',e=>{
+    const t=e.target;
+    if(t.dataset.sc!==undefined){
+      const i=+t.dataset.sc;let v=t.value.replace(/[^\d]/g,'');
+      t.value=v;
+      document.querySelectorAll(`[data-sc="${i}"]`).forEach(x=>{if(x!==t)x.value=v});
+      t.classList.toggle('bad',v!==''&&+v>MAXS[i]);
+      CUR.scores[i]=v===''?null:+v;updTot();
+    }else if(t.dataset.op!==undefined){const i=+t.dataset.op;CUR.opinions[i]=t.value;document.querySelectorAll(`[data-op="${i}"]`).forEach(x=>{if(x!==t)x.value=t.value})}
+    else if(t.dataset.sum){CUR.summary=t.value;document.querySelectorAll('[data-sum]').forEach(x=>{if(x!==t)x.value=t.value})}
+    else if(t.id==='f_doneDate'){const d=$('#f_dueDate');if(d&&!d.value&&t.value)d.value=addDays(t.value,+S.cfg.dueDays||30)}
+  });
+  m.addEventListener('change',e=>{if(e.target.id==='f_doneDate'){const d=$('#f_dueDate');if(d&&!d.value&&e.target.value)d.value=addDays(e.target.value,+S.cfg.dueDays||30)}});
+  renderPost();renderAppr();
+  if(!CUR._new)loadRecur().then(()=>{if(VIEW==='form'){renderMons();renderRcr()}}).catch(e=>{const el=$('#rcr');if(el)el.innerHTML='<div class="muted" style="margin-top:10px">재발 확인 자료를 불러오지 못했습니다 ('+esc(e.message)+')</div>'});
+}
+function fullSc(i){CUR.scores[i]=MAXS[i];document.querySelectorAll(`[data-sc="${i}"]`).forEach(x=>{x.value=MAXS[i];x.classList.remove('bad')});updTot()}
+function updTot(){
+  const r=CUR,t=total(r),j=judge(r),n=r.scores.filter(v=>v!==null&&v!=='').length;
+  const over=r.scores.some((v,i)=>v!==null&&+v>MAXS[i]);
+  const chk=(k,l)=>`<span style="margin-right:12px">${j===k?'■':'□'} ${l}</span>`;
+  $('#tot').innerHTML=`<div><div class="muted">합계</div><div class="big readout">${t}<span class="muted" style="font-size:14px"> / 100</span></div></div>
+  <div>${j?`<span class="tag ${JT[j][1]}" style="font-size:15px;padding:5px 14px">${JT[j][0]}</span>`:`<span class="tag n">입력 ${n}/9</span>`}</div>
+  <div class="muted" style="flex:1;min-width:240px">${chk('A','Accept (80점 이상)')}${chk('R1','Reject (60점 이상 : 기존대책보완)')}${chk('R2','Reject (60점 미만 : 대책재수립)')}${over?'<div style="color:var(--ng);margin-top:4px">⚠ 배점을 초과한 평점이 있습니다.</div>':''}<div style="margin-top:4px">📎 증빙 연결 항목 <b>${evCover(r)}</b>/${ITEMS.length} · 첨부 ${(r.files||[]).length}건${openActs(r).length?` · <span style="color:var(--warn)">要 미완료 ${openActs(r).length}건</span>`:''}</div></div>`;
+}
+function renderAppr(){
+  const r=CUR,a=r.appr||{};
+  const box=(h,n,d,btn)=>`<div class="box"><div class="h">${h}</div><div class="n">${esc(n||'')}</div><div class="d">${d?fmtD(d):''}</div>${btn||''}</div>`;
+  const saved=!r._new;
+  const rv=a.review?`${isAppr()?'<button class="btn s" onclick="apprAct(\'review\',0)">취소</button>':''}`:(isAppr()&&saved&&complete(r)?'<button class="btn s p" onclick="apprAct(\'review\',1)">검토</button>':'');
+  const ap=a.approve?`${isAppr()?'<button class="btn s" onclick="apprAct(\'approve\',0)">취소</button>':''}`:(isAppr()&&saved&&a.review?'<button class="btn s p" onclick="apprAct(\'approve\',1)">승인</button>':'');
+  $('#appr').innerHTML=box('작성',r.inspector,r.chkDate)+box('검토',a.review&&a.review.n,a.review&&a.review.d,rv)+box('승인',a.approve&&a.approve.n,a.approve&&a.approve.d,ap)
+   +(!isAppr()?'<div class="muted span4" style="grid-column:1/-1">검토·승인은 승인자 PIN으로 로그인해야 가능합니다. 평가 점수가 모두 입력·저장된 건만 결재할 수 있습니다.</div>':'');
+}
+function collect(noValidate){
+  const r=CUR,g=k=>{const e=$('#f_'+k);return e?e.value.trim():r[k]};
+  for(const k of ['cust','site','car','part','occDate','qty','doneDate','dueDate','cause','action','chkDate','inspector'])r[k]=g(k);
+  return r;
+}
+function sig(r){return JSON.stringify([r.cust,r.site,r.car,r.part,r.occDate,r.qty,r.cause,r.action,r.doneDate,r.chkDate,r.inspector,r.scores,r.opinions,r.summary])}
+function saveForm(){
+  const r=collect();
+  if(!r.part||!r.occDate||!r.cust){toast('고객사·품명·발생일은 필수입니다');return}
+  if(custRule(r)){const e=$('#f_cust');if(e){if(![...e.options].some(o=>o.value===r.cust))e.add(new Option(r.cust));e.value=r.cust}toast('2026년 이후 발생분은 SBC로 저장됩니다')}
+  if(r.scores.some((v,i)=>v!==null&&+v>MAXS[i])){toast('배점을 초과한 평점이 있습니다');return}
+  if(scored(r)&&!complete(r)&&!confirm('평점이 일부만 입력되었습니다. 평가대기 상태로 저장할까요?'))return;
+  if(complete(r)&&!r.chkDate)r.chkDate=today();
+  const old=S.recs.find(x=>x.id===r.id);
+  if(old&&(old.appr.review||old.appr.approve)&&sig(old)!==sig(r)){
+    if(!confirm('결재된 내용이 변경되었습니다. 저장하면 검토·승인이 초기화됩니다. 계속할까요?'))return;
+    r.appr={review:null,approve:null};
+  }
+  if(old&&old.legacy&&sig(old)!==sig(r))delete r.legacy;
+  if(!r.dueDate&&r.doneDate)r.dueDate=addDays(r.doneDate,+S.cfg.dueDays||30);
+  delete r._new;r.ua=nowISO();r.editor=USER?USER.n:'';
+  const i=S.recs.findIndex(x=>x.id===r.id);if(i>=0)S.recs[i]=JSON.parse(JSON.stringify(r));else S.recs.push(JSON.parse(JSON.stringify(r)));
+  saveLocal();schedulePush();toast('저장되었습니다');
+  CUR=JSON.parse(JSON.stringify(r));render();
+}
+function apprAct(k,on){
+  if(!isAppr())return;
+  const r=S.recs.find(x=>x.id===CUR.id);if(!r)return;
+  if(sig(r)!==sig(collect(true))){toast('변경 내용을 먼저 저장하세요');return}
+  r.appr=r.appr||{};
+  if(on)r.appr[k]={n:USER.n,d:today()};else{r.appr[k]=null;if(k==='review')r.appr.approve=null}
+  r.ua=nowISO();saveLocal();schedulePush();
+  CUR=JSON.parse(JSON.stringify(r));render();toast(on?(k==='review'?'검토 완료':'승인 완료'):'결재 취소');
+}
+function reEval(skip){
+  const o=S.recs.find(x=>x.id===CUR.id);if(!o)return;
+  if(!skip&&!confirm('보완/재수립 대책에 대해 재평가 건을 새로 등록합니다.'))return;
+  const n=newRec();
+  Object.assign(n,{cust:o.cust,site:o.site,car:o.car,part:o.part,occDate:o.occDate,qty:o.qty,cause:o.cause,action:o.action+'\n[보완] ',round:(o.round||1)+1,parent:o.id,src:'재평가('+recNo(o)+')'});
+  CUR=n;VIEW='form';render();window.scrollTo(0,0);
+}
+function delRec(){
+  if(!isAppr())return;
+  if(!confirm('이 검증 건을 삭제할까요? (모든 기기에서 삭제됩니다)'))return;
+  S.del[CUR.id]=Date.now();S.recs=S.recs.filter(r=>r.id!==CUR.id);saveLocal();schedulePush();toast('삭제되었습니다');go('list');
+}
+
+
+/* ---------- 사후관리: 증빙·후속조치·재발 모니터링 ---------- */
+const srec=()=>S.recs.find(x=>x.id===CUR.id);
+const pubUrl=p=>SB_URL+'/storage/v1/object/public/'+BUCKET+'/'+String(p).split('/').map(encodeURIComponent).join('/');
+function patch(fn,msg){
+  if(!USER){login();return false}
+  const r=srec();if(!r||CUR._new){toast('먼저 [저장]한 뒤 사용할 수 있습니다');return false}
+  ensureRec(r);fn(r);
+  for(const k of ['files','acts','mons','xdel'])CUR[k]=JSON.parse(JSON.stringify(r[k]));
+  saveLocal();schedulePush();if(msg)toast(msg);renderPost();return true;
+}
+function renderPost(){ensureRec(CUR);renderEvi();renderActs();renderMons();renderRcr();updTot()}
+function renderEvi(){
+  const r=CUR,ed=canEdit()&&!r._new,fs=r.files||[];
+  let h='';
+  if(r._new)h+='<div class="hint">저장 후 증빙자료를 첨부할 수 있습니다.</div>';
+  else if(ed)h+=`<div class="flt"><select id="ev_cat">${FCATS.map(c=>`<option>${c}</option>`).join('')}</select>
+   <select id="ev_item"><option value="">체크항목 연결 안 함</option>${ITEMS.map((it,i)=>`<option value="${i}">${i+1}. ${esc(it.t.length>24?it.t.slice(0,24)+'…':it.t)}</option>`).join('')}</select>
+   <label class="btn p">📎 파일 첨부<input type="file" multiple hidden accept="image/*,.pdf,.xlsx,.xls,.docx,.doc,.pptx,.hwp,.hwpx" onchange="upFiles(this.files);this.value=''"></label>
+   <label class="btn m-only">📷 촬영<input type="file" accept="image/*" capture="environment" hidden onchange="upFiles(this.files);this.value=''"></label>
+   <span class="muted" id="ev_st">사진은 자동 압축 · 파일당 20MB 이하</span></div>`;
+  if(!fs.length)h+='<div class="muted">첨부된 증빙이 없습니다.</div>';
+  else h+=`<div class="evg">${fs.map(f=>{const u=pubUrl(f.path),img=/^image\//.test(f.type||''),can=ed&&USER&&(isAppr()||f.by===USER.n);
+    return`<div class="evc"><a class="evt" href="${u}" target="_blank" rel="noopener">${img?`<img src="${u}" loading="lazy" alt="">`:`<span class="evf">${esc((f.name.split('.').pop()||'FILE').toUpperCase())}</span>`}</a>
+    <div class="evm"><div><span class="tag b">${esc(f.cat)}</span>${f.item!==''&&f.item!=null?` <span class="tag n">${+f.item+1}번 항목</span>`:''}</div><div class="ell" title="${esc(f.name)}">${esc(f.name)}</div><div class="muted">${esc(f.by)} · ${fmtD(locD(f.at))}</div>${can?`<div><button class="btn s d" onclick="delFile('${f.id}')">삭제</button></div>`:''}</div></div>`}).join('')}</div>`;
+  $('#evi').innerHTML=h;
+  document.querySelectorAll('[data-evc]').forEach(el=>{const i=+el.dataset.evc,n=fs.filter(f=>f.item!==''&&f.item!=null&&+f.item===i).length;el.innerHTML=n?`<span class="tag b" style="font-size:11px;padding:1px 6px">📎${n}</span>`:''});
+}
+function shrink(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();
+  im.onload=()=>{const k=Math.min(1,1600/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>b?res(b):rej(new Error('압축실패')),'image/jpeg',0.82)};
+  im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('이미지 해석 불가'))};im.src=u})}
+async function upFiles(list){
+  const r=srec();if(!r||CUR._new){toast('먼저 [저장]한 뒤 첨부하세요');return}
+  if(!USER){login();return}
+  const cat=$('#ev_cat').value,itv=$('#ev_item').value,item=itv===''?'':+itv,fl=[...list];let ok=0;
+  for(let i=0;i<fl.length;i++){
+    const f=fl[i];$('#ev_st').textContent=`업로드 중 ${i+1}/${fl.length} …`;
+    if(f.size>20e6){toast(f.name+' : 20MB 초과');continue}
+    let blob=f,type=f.type||'application/octet-stream',ext=((f.name.split('.').pop()||'bin').toLowerCase()).replace(/[^a-z0-9]/g,'')||'bin';
+    if(/^image\//.test(type)&&!/gif|svg/.test(type)){try{const b=await shrink(f);if(b.size<f.size){blob=b;type='image/jpeg';ext='jpg'}}catch(e){}}
+    const id='F'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),path=`${FOLDER}/${r.id}/${id}.${ext}`;
+    try{
+      const res=await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${path}`,{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':type,'x-upsert':'true'},body:blob});
+      if(!res.ok)throw new Error(res.status+' '+(await res.text()).slice(0,80));
+      patch(x=>x.files.push({id,name:f.name,cat,item,path,type,size:blob.size,by:USER.n,at:nowISO()}));ok++;
+    }catch(e){console.warn(e);toast('업로드 실패: '+f.name+' ('+e.message+')')}
+  }
+  const st=$('#ev_st');if(st)st.textContent=ok?`${ok}건 첨부 완료`:'';
+  if(ok)toast(`증빙 ${ok}건 첨부`);
+}
+async function delFile(id){
+  const f=(CUR.files||[]).find(x=>x.id===id);if(!f||!confirm(`'${f.name}' 삭제할까요?`))return;
+  try{await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${f.path}`,{method:'DELETE',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}})}catch(e){}
+  patch(r=>{r.files=r.files.filter(x=>x.id!==id);r.xdel[id]=nowISO()},'삭제되었습니다');
+}
+/* 要 후속조치 */
+function renderActs(){
+  const r=CUR,ed=canEdit()&&!r._new,A=r.acts||[];
+  let h=r._new?'<div class="hint">저장 후 등록할 수 있습니다.</div>':'';
+  if(ed)h+=`<div class="flt"><button class="btn" onclick="extractActs()">⤵ 평가의견·종합의견의 '要' 사항 가져오기</button><button class="btn" onclick="addAct()">＋ 직접 추가</button></div>`;
+  if(!A.length){h+='<div class="muted">등록된 후속조치가 없습니다.</div>';$('#acts').innerHTML=h;return}
+  h+=`<div class="actr tbl-pc" style="font-size:12px;color:var(--sub);font-weight:600;padding-top:0"><div>조치 내용</div><div>담당</div><div>기한</div><div>상태</div></div>`;
+  h+=A.map(a=>{const dis=ed&&!a.done?'':'disabled',d=dday(a.due);
+    return`<div class="actr"><div><input value="${esc(a.text)}" ${dis} onchange="updAct('${a.id}','text',this.value)"></div>
+    <div><input value="${esc(a.owner)}" placeholder="담당자" ${dis} onchange="updAct('${a.id}','owner',this.value)"></div>
+    <div><input type="date" value="${esc(a.due)}" ${dis} onchange="updAct('${a.id}','due',this.value)"></div>
+    <div>${a.done?`<div class="dn">✔ 완료 ${fmtD(a.done.d)} · ${esc(a.done.n)}</div><div class="muted">${esc(a.done.note)}</div>${ed&&(isAppr()||a.done.n===USER.n)?`<button class="btn s" onclick="undoAct('${a.id}')">되돌리기</button>`:''}`
+      :`${ddTag(d)} ${ed?`<button class="btn s p" onclick="doneAct('${a.id}')">완료</button> <button class="btn s d" onclick="delAct('${a.id}')">삭제</button>`:''}`}</div></div>`}).join('');
+  $('#acts').innerHTML=h;
+}
+function splitReq(t){
+  return String(t||'').split(/\n|\s+(?=\d+[.)]\s*)/).map(x=>x.replace(/^\s*\d+[.)]\s*/,'').trim()).filter(x=>/要/.test(x));
+}
+function extractActs(){
+  const r=CUR,have=new Set((r.acts||[]).map(a=>a.text.replace(/\s/g,'')));const L=[];
+  splitReq(r.summary).forEach(t=>L.push(t));
+  (r.opinions||[]).forEach((o,i)=>splitReq(o).forEach(t=>L.push(`[${i+1}번] ${t}`)));
+  const add=L.filter(t=>!have.has(t.replace(/\s/g,'')));
+  if(!add.length){toast("가져올 '要' 사항이 없습니다 (이미 등록됨)");return}
+  const due=addDays(today(),30);
+  patch(x=>add.forEach((t,k)=>x.acts.push({id:'A'+Date.now().toString(36)+k,text:t,owner:'',due,done:null,by:USER.n,at:nowISO(),ua:nowISO()})),`要 사항 ${add.length}건 등록 — 담당·기한을 지정하세요`);
+}
+function addAct(){const t=prompt('후속조치 내용');if(!t||!t.trim())return;patch(x=>x.acts.push({id:'A'+Date.now().toString(36),text:t.trim(),owner:'',due:addDays(today(),30),done:null,by:USER.n,at:nowISO(),ua:nowISO()}))}
+function updAct(id,k,v){patch(x=>{const a=x.acts.find(y=>y.id===id);if(a){a[k]=v.trim();a.ua=nowISO()}})}
+function doneAct(id){const note=prompt('조치 결과를 입력하세요 (증빙은 ③에 첨부)','');if(note===null)return;patch(x=>{const a=x.acts.find(y=>y.id===id);if(a){a.done={n:USER.n,d:today(),note:note.trim()};a.ua=nowISO()}},'완료 처리되었습니다')}
+function undoAct(id){patch(x=>{const a=x.acts.find(y=>y.id===id);if(a){a.done=null;a.ua=nowISO()}})}
+function delAct(id){if(!confirm('이 후속조치를 삭제할까요?'))return;patch(x=>{x.acts=x.acts.filter(y=>y.id!==id);x.xdel[id]=nowISO()})}
+/* 재발 모니터링 */
+let RCR=null,RCR_P=null;
+async function fetchAll(t,q){const out=[];for(let o=0;o<50000;o+=1000){const r=await fetch(`${SB_URL}/rest/v1/${t}?${q}&limit=1000&offset=${o}`,{headers:H,cache:'no-store'});if(!r.ok)throw new Error(t+' '+r.status);const j=await r.json();out.push(...j);if(j.length<1000)break}return out}
+function loadRecur(){
+  if(RCR)return Promise.resolve(RCR);if(RCR_P)return RCR_P;
+  RCR_P=(async()=>{
+    const led=await fetchAll('stock_ledger','select=led_date,pn,qty,party,note&kind=eq.'+encodeURIComponent('검사폐기')+'&order=led_date.asc,src_key.asc');
+    let sdr=[];try{sdr=await fetchAll('special_defect_reports','select=doc_no,occur_date,customer,part_no,defect_desc,qty&order=occur_date.asc,id.asc')}catch(e){}
+    RCR={led,sdr,at:Date.now()};return RCR})().catch(e=>{RCR_P=null;throw e});
+  return RCR_P;
+}
+const pcore=s=>String(s||'').toUpperCase().replace(/\s/g,'').replace(/^(IW\/OW-|IW-|OW-)/,'').replace(/-[1-3]$/,'');
+function pmatch(part,pn){const b=pcore(pn);if(b.length<5)return false;return String(part||'').split(/[\n,]+/).map(pcore).filter(a=>a.length>=5).some(a=>a===b||a.startsWith(b)||b.startsWith(a))}
+function recurHits(r){
+  if(!RCR||!r.doneDate)return null;
+  const txt=(r.cause||'')+' '+(r.action||'');
+  const led=RCR.led.filter(x=>x.led_date>r.doneDate&&pmatch(r.part,x.pn)).map(x=>{
+    const ty=[...String(x.note||'').matchAll(/([가-힣A-Za-z0-9]+)\s*:\s*(\d+)/g)].map(m=>[m[1],+m[2]]);
+    return{...x,ty,sus:ty.filter(([t])=>txt.includes(t))}});
+  const sdr=RCR.sdr.filter(x=>(x.occur_date||'')>r.doneDate&&pmatch(r.part,x.part_no));
+  return{led,sdr};
+}
+function winHits(r,m){ // 해당 차수 구간(직전 확인예정일 ~ 이번 예정일)의 의심 건
+  const H2=recurHits(r);if(!H2)return null;const i=MONS.indexOf(m),from=i?addMonths(r.doneDate,MONS[i-1]):r.doneDate,to=addMonths(r.doneDate,m);
+  return{sus:H2.led.filter(x=>x.led_date>from&&x.led_date<=to&&x.sus.length),all:H2.led.filter(x=>x.led_date>from&&x.led_date<=to),sdr:H2.sdr.filter(x=>x.occur_date>from&&x.occur_date<=to)};
+}
+function renderMons(){
+  const r=CUR,ed=canEdit()&&!r._new;
+  if(!r.doneDate){$('#mons').innerHTML='<div class="muted">대책 완료일을 입력·저장하면 3·6·12개월 확인 일정이 자동으로 생성됩니다.</div>';return}
+  let h=`<div class="monr tbl-pc" style="font-size:12px;color:var(--sub);font-weight:600;padding-top:0"><div>차수</div><div>확인 예정일</div><div>상태</div><div>확인 근거</div><div></div></div>`;
+  h+=monList(r).map(x=>{const w=winHits(r,x.m);
+    const hint=w?`<span class="muted">구간 출하검사불량 ${w.all.length}건${w.sus.length?` · <b style="color:var(--ng)">동일유형 의심 ${w.sus.length}건</b>`:''}${w.sdr.length?` · <b style="color:var(--ng)">특별불량 ${w.sdr.length}건</b>`:''}</span>`:'';
+    const st=x.res?(x.res.res==='OK'?'<span class="tag ok">✓ 재발 없음</span>':'<span class="tag ng">✗ 재발</span>'):(!x.active?'<span class="tag n">대상외</span>':ddTag(dday(x.due)));
+    const body=x.res?`<div>${esc(x.res.note)||'-'}</div><div class="muted">${esc(x.res.n)} · ${fmtD(x.res.d)}</div>`:(!x.active?'<span class="muted">이관 전 도래분(앱 도입 이전) — 필요 시 기록 가능</span>':hint||'<span class="muted">-</span>');
+    const btn=!ed?'':x.res?`<button class="btn s" onclick="monCancel(${x.m})">취소</button>`:`<button class="btn s p" onclick="monSet(${x.m},'OK')">✓ 재발 없음</button> <button class="btn s d" onclick="monSet(${x.m},'NG')">✗ 재발</button>`;
+    return`<div class="monr"><div><b>${x.m}개월</b></div><div class="nw">${fmtD(x.due)}</div><div>${st}</div><div>${body}${x.res&&hint?'<div>'+hint+'</div>':''}</div><div>${btn}</div></div>`}).join('');
+  $('#mons').innerHTML=h;
+}
+function monSet(m,res){
+  const w=winHits(CUR,m);
+  const def=res==='OK'?(w?`출하검사 동일유형 불량 ${w.sus.length}건, 특별불량 ${w.sdr.length}건 확인 — 재발 없음`:'출하검사·고객 클레임 확인 결과 재발 없음'):'';
+  const note=prompt(res==='OK'?'확인 근거를 입력하세요':'재발 내용을 입력하세요 (일자·수량·현상)',def);if(note===null)return;
+  patch(x=>{x.mons[m]={res,n:USER.n,d:today(),note:note.trim(),at:nowISO()};delete x.xdel['mon'+m]},res==='OK'?`${m}개월 확인 완료`:'재발로 기록되었습니다');
+  if(res==='NG'&&confirm('재발이 확인되었습니다. 대책 재수립을 위한 재평가 건을 등록할까요?'))reEval(true);
+}
+function monCancel(m){if(!confirm(m+'개월 확인 기록을 취소할까요?'))return;patch(x=>{delete x.mons[m];x.xdel['mon'+m]=nowISO()})}
+function renderRcr(){
+  const el=$('#rcr');if(!el)return;const r=CUR;
+  if(r._new||!r.doneDate){el.innerHTML='';return}
+  if(!RCR){el.innerHTML='<div class="muted" style="margin-top:10px">재발 확인 자료 불러오는 중…</div>';return}
+  const h2=recurHits(r),L=h2.led.slice().reverse(),sus=L.filter(x=>x.sus.length);
+  let h=`<div class="subh">🔎 대책완료(${fmtD(r.doneDate)}) 이후 같은 품번 불량 이력 <span class="muted" style="font-weight:400">— 재고수불부 검사폐기(출하검사, 2026-04 이후) · 특별불량 대책서</span></div>
+  <div style="margin-bottom:8px"><span class="tag ${L.length?'w':'ok'}">출하검사 불량 ${L.length}건 · ${L.reduce((a,x)=>a+(+x.qty||0),0).toLocaleString()}EA</span> <span class="tag ${sus.length?'ng':'ok'}">동일유형 의심 ${sus.length}건</span> <span class="tag ${h2.sdr.length?'ng':'ok'}">특별불량 ${h2.sdr.length}건</span></div>`;
+  if(h2.sdr.length)h+=`<div class="tw"><table class="t"><tr><th>특별불량</th><th>발생일</th><th>품번</th><th>내용</th></tr>${h2.sdr.map(x=>`<tr><td class="nw">${esc(x.doc_no)}</td><td class="nw">${fmtD(x.occur_date)}</td><td class="nw">${esc(x.part_no)}</td><td>${esc(x.defect_desc)}</td></tr>`).join('')}</table></div>`;
+  if(L.length)h+=`<details ${sus.length?'open':''}><summary class="muted" style="cursor:pointer;margin:6px 0">출하검사 불량 상세 ${L.length}건 보기 (동일유형 의심 우선 표시)</summary><div class="tw"><table class="t"><tr><th>일자</th><th>품번</th><th class="rt">수량</th><th>불량내용</th><th>판단</th></tr>${[...sus,...L.filter(x=>!x.sus.length)].slice(0,60).map(x=>`<tr><td class="nw">${fmtD(x.led_date)}</td><td class="nw">${esc(x.pn)}</td><td class="rt readout">${(+x.qty||0).toLocaleString()}</td><td>${esc(String(x.note||'').replace(/^출하검사\s*/,''))}</td><td>${x.sus.length?`<span class="tag ng">의심: ${esc(x.sus.map(s=>s[0]).join(','))}</span>`:'<span class="tag n">타유형</span>'}</td></tr>`).join('')}</table></div></details>`;
+  h+=`<div class="muted" style="margin-top:6px">※ '동일유형 의심'은 불량유형 단어가 원인·대책 내용에 포함된 경우입니다. 최종 판단은 확인자가 합니다. 2026-04 이전 구간은 출하검사 기록·고객 클레임을 직접 확인하세요.</div>`;
+  el.innerHTML=h;
+}
+
+/* ---------- print ---------- */
+function printForm(r){
+  const j=judge(r),a=r.appr||{};
+  const c=(v,cls,cs,rs,st)=>`<td class="${cls||''}"${cs?` colspan="${cs}"`:''}${rs?` rowspan="${rs}"`:''}${st?` style="${st}"`:''}>${v}</td>`;
+  const e=s=>esc(s).replace(/\n/g,'<br>');
+  const sc=i=>r.scores[i]??'';
+  let h=`<div class="pg"><table class="pf"><colgroup><col style="width:7%"><col style="width:4%"><col style="width:9%"><col style="width:22%"><col style="width:24%"><col style="width:6%"><col style="width:5%"><col style="width:8%"><col style="width:7%"><col style="width:8%"></colgroup>
+  <tr style="height:26px">${c('회사명','lb')}${c('(주)태진다이텍','',2,'','text-align:center;font-weight:700')}${c('품질 개선 유효성 검증 체크-시트','ttl',3,3)}${c('결<br>재','lb','',3)}${c('작성','lb')}${c('검토','lb')}${c('승인','lb')}</tr>
+  <tr style="height:26px">${c('점검일','lb')}${c(fmtD(r.chkDate),'',2,'','text-align:center')}${c(e(r.inspector),'','',2,'text-align:center;font-weight:700')}${c(a.review?e(a.review.n):'','','',2,'text-align:center;font-weight:700')}${c(a.approve?e(a.approve.n):'','','',2,'text-align:center;font-weight:700')}</tr>
+  <tr style="height:26px">${c('점검자','lb')}${c(e(r.inspector),'',2,'','text-align:center')}</tr>
+  <tr><td class="nb" colspan="10" style="height:6px"></td></tr>
+  <tr style="height:24px">${c('차 종','lb')}${c(e(r.car),'',2,'','text-align:center')}${c('불량 발생내용/원인','lb')}${c('개선 대책','lb',5)}${c('완료일','lb')}</tr>
+  <tr style="height:24px">${c('품 명','lb')}${c(e(r.part),'',2,'','text-align:center;font-weight:700')}${c(e(r.cause),'pre','',4,'vertical-align:top;font-size:11px')}${c(e(r.action),'pre',5,4,'vertical-align:top;font-size:11px')}${c(fmtD(r.doneDate),'',1,4,'text-align:center')}</tr>
+  <tr style="height:24px">${c('발생일','lb')}${c(fmtD(r.occDate),'',2,'','text-align:center')}</tr>
+  <tr style="height:24px">${c('발생처','lb')}${c(e(custLabel(r)),'',2,'','text-align:center')}</tr>
+  <tr style="height:24px">${c('발생수량','lb')}${c(e(r.qty),'',2,'','text-align:center')}</tr>
+  <tr><td class="nb" colspan="10" style="height:6px;font-weight:700;text-align:left;padding:6px 0 3px">▶ check list</td></tr>
+  <tr style="height:22px">${c('구분','lb')}${c('NO','lb')}${c('체-크 항 목','lb',2)}${c('평 가 의 견','lb',4)}${c('평점','lb')}${c('배점','lb')}</tr>`;
+  let lastG='';
+  ITEMS.forEach((it,i)=>{
+    const span=ITEMS.filter(x=>x.g===it.g).length;
+    h+=`<tr style="height:30px">${it.g!==lastG?c(e(it.g),'lb','',span):''}${c(i+1,'','','','text-align:center')}${c(esc(it.t),'',2,'','font-size:11px')}${c(e(r.opinions[i]),'pre',4,'','font-size:11px')}${c(sc(i),'','','','text-align:center;font-weight:700')}${c(it.m,'','','','text-align:center')}</tr>`;
+    lastG=it.g;
+  });
+  h+=`<tr style="height:60px">${c('점검자<br>종합의견','lb')}${c(e(r.summary),'pre',7,'','vertical-align:top;font-size:11px')}${c(sc(8),'','','','text-align:center;font-weight:700')}${c(SUM_MAX,'','','','text-align:center')}</tr>
+  <tr style="height:30px">${c('종합판정','lb')}${c(`${j==='A'?'■':'□'} Accept (80점 이상)&nbsp;&nbsp;&nbsp;&nbsp; ${j==='R1'?'■':'□'} Reject (60점 이상 : 기존대책보완)&nbsp;&nbsp;&nbsp;&nbsp; ${j==='R2'?'■':'□'} Reject (60점 미만 : 대책재수립)`,'',7,'','text-align:center;font-weight:700')}${c(complete(r)?total(r):'','','','','text-align:center;font-weight:800;font-size:14px')}${c(100,'','','','text-align:center')}</tr>
+  </table><div class="pfno"><span>${FORM_NO}</span><span>${recNo(r)}${a.review?' · 검토 '+fmtD(a.review.d):''}${a.approve?' · 승인 '+fmtD(a.approve.d):''}</span><span>(주)태진다이텍</span></div></div>`;
+  return h;
+}
+function printPost(r){
+  const A=r.acts||[],F=r.files||[],M=monList(r);
+  if(!A.length&&!F.length&&!M.some(x=>x.res))return'';
+  const e=s=>esc(s).replace(/\n/g,'<br>');
+  const th=t=>`<td class="lb">${t}</td>`;
+  let h=`<div class="pg"><table class="pf"><colgroup><col style="width:14%"><col style="width:36%"><col style="width:14%"><col style="width:36%"></colgroup>
+  <tr style="height:34px"><td class="ttl" colspan="4" style="font-size:17px">품질 개선 유효성 검증 — 사후관리 기록</td></tr>
+  <tr>${th('관리번호')}<td>${recNo(r)}</td>${th('품 명')}<td><b>${e(r.part)}</b></td></tr>
+  <tr>${th('발생처')}<td>${e(custLabel(r))}</td>${th('대책 완료일')}<td>${fmtD(r.doneDate)}</td></tr></table>`;
+  h+=`<div style="font-weight:700;margin:10px 0 4px;font-size:12px">1. 要 후속조치</div><table class="pf"><colgroup><col style="width:4%"><col style="width:38%"><col style="width:9%"><col style="width:10%"><col style="width:10%"><col style="width:29%"></colgroup>
+   <tr>${th('No')}${th('조치 내용')}${th('담당')}${th('기한')}${th('완료일')}${th('조치 결과')}</tr>
+   ${A.length?A.map((a,i)=>`<tr><td style="text-align:center">${i+1}</td><td>${e(a.text)}</td><td style="text-align:center">${e(a.owner)}</td><td style="text-align:center">${fmtD(a.due)}</td><td style="text-align:center">${a.done?fmtD(a.done.d):'미완료'}</td><td>${a.done?e(a.done.note)+' ('+e(a.done.n)+')':''}</td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center">해당 없음</td></tr>'}</table>`;
+  h+=`<div style="font-weight:700;margin:10px 0 4px;font-size:12px">2. 사후 재발 모니터링</div><table class="pf"><colgroup><col style="width:8%"><col style="width:12%"><col style="width:12%"><col style="width:10%"><col style="width:10%"><col style="width:48%"></colgroup>
+   <tr>${th('차수')}${th('확인 예정일')}${th('결과')}${th('확인자')}${th('확인일')}${th('확인 근거')}</tr>
+   ${M.map(x=>`<tr><td style="text-align:center">${x.m}개월</td><td style="text-align:center">${fmtD(x.due)}</td><td style="text-align:center;font-weight:700">${x.res?(x.res.res==='OK'?'재발 없음':'재발'):(x.active?'':'대상외')}</td><td style="text-align:center">${x.res?e(x.res.n):''}</td><td style="text-align:center">${x.res?fmtD(x.res.d):''}</td><td>${x.res?e(x.res.note):''}</td></tr>`).join('')}</table>`;
+  h+=`<div style="font-weight:700;margin:10px 0 4px;font-size:12px">3. 증빙자료 (${F.length}건)</div><table class="pf"><colgroup><col style="width:4%"><col style="width:13%"><col style="width:12%"><col style="width:51%"><col style="width:10%"><col style="width:10%"></colgroup>
+   <tr>${th('No')}${th('구분')}${th('연결 항목')}${th('파일명')}${th('등록자')}${th('등록일')}</tr>
+   ${F.length?F.map((f,i)=>`<tr><td style="text-align:center">${i+1}</td><td style="text-align:center">${e(f.cat)}</td><td style="text-align:center">${f.item!==''&&f.item!=null?(+f.item+1)+'번':'-'}</td><td>${e(f.name)}</td><td style="text-align:center">${e(f.by)}</td><td style="text-align:center">${fmtD(locD(f.at))}</td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center">첨부 없음</td></tr>'}</table>`;
+  const imgs=F.filter(f=>/^image\//.test(f.type||'')).slice(0,8);
+  if(imgs.length)h+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">${imgs.map((f,i)=>`<div style="border:1px solid #000;font-size:10px;text-align:center"><img src="${pubUrl(f.path)}" style="width:100%;height:42mm;object-fit:contain;display:block;background:#fff"><div style="padding:2px">${F.indexOf(f)+1}. ${e(f.cat)}${f.item!==''&&f.item!=null?' · '+(+f.item+1)+'번':''}</div></div>`).join('')}</div>`;
+  h+=`<div class="pfno"><span>${FORM_NO} (별지)</span><span>${recNo(r)}</span><span>(주)태진다이텍</span></div></div>`;
+  return h;
+}
+function printRecs(list){
+  if(!list.length){toast('인쇄할 자료가 없습니다');return}
+  $('#print').innerHTML=list.map(r=>printForm(r)+printPost(r)).join('');
+  const ims=[...document.querySelectorAll('#print img')];
+  Promise.race([Promise.all(ims.map(i=>i.complete?1:new Promise(ok=>{i.onload=i.onerror=ok}))),new Promise(ok=>setTimeout(ok,5000))]).then(()=>setTimeout(()=>window.print(),50));
+}
+
+/* ---------- data mgmt ---------- */
+let IMP=[];
+function vData(){
+  return `<div class="ph"><h2>데이터 관리</h2></div>
+  <div class="grid2"><div class="panel"><h3>📥 엑셀 가져오기 <span class="muted">${FORM_NO} 양식 (.xls/.xlsx)</span></h3>
+   <div class="muted" style="margin-bottom:10px">기존 고객사별 엑셀 파일을 여러 개 한 번에 선택할 수 있습니다. 시트 1장 = 1건으로 읽으며, 같은 품명·발생일 건은 중복으로 표시됩니다.</div>
+   ${canEdit()?`<input type="file" id="xf" accept=".xls,.xlsx" multiple onchange="readXls(this.files)">`:'<div class="hint">로그인 후 사용할 수 있습니다.</div>'}
+   <div id="impv" style="margin-top:12px"></div></div>
+  <div class="panel"><h3>📤 내보내기 · 백업</h3>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="exportXlsx(S.recs)">⬇ 전체 목록 엑셀</button><button class="btn" onclick="backup()">⬇ JSON 백업</button>${isAppr()?`<label class="btn">⬆ JSON 복원<input type="file" accept=".json" hidden onchange="restore(this.files[0])"></label>`:''}<button class="btn" onclick="sync()">🔃 서버 새로고침</button></div>
+   <div class="muted" style="margin-top:12px;line-height:1.7">· 서버: 공유 Supabase kv_store (<code>${KV}</code>) — 모든 기기 자동 동기화<br>· 상단 점: 초록=동기화 완료, 노랑=진행 중, 빨강=실패(로컬에 저장됨)<br>· 전체 ${S.recs.length}건 · 버전 ${VER}</div></div></div>`;
+}
+function readXls(files){
+  if(!window.XLSX){toast('엑셀 라이브러리를 불러오지 못했습니다(네트워크 확인)');return}
+  IMP=[];let n=files.length;
+  [...files].forEach(file=>{
+    const fr=new FileReader();
+    fr.onload=e=>{
+      try{
+        const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+        wb.SheetNames.forEach(sn=>{const r=parseSheet(wb.Sheets[sn]);if(r){r.src=file.name+' / '+sn;IMP.push(r)}});
+      }catch(err){console.warn(err);toast(file.name+' 읽기 실패')}
+      if(--n===0)showImp();
+    };
+    fr.readAsArrayBuffer(file);
+  });
+}
+function parseSheet(ws){
+  const v=a=>{const c=ws[a];if(!c)return'';let x=c.v;if(typeof x==='string')x=x.replace(/\r\n?/g,'\n').trim();return x};
+  const s=a=>{const x=v(a);return typeof x==='number'?String(x):String(x??'')};
+  if(!String(v('J2')).includes('유효성')&&!String(v('F16')).includes('항'))return null;
+  const part=s('E10');if(!part)return null;
+  const num=a=>{const x=v(a);if(x===''||x==null)return null;const n=+x;return isNaN(n)?null:n};
+  let cust=s('E12').replace(/\s+/g,' ').trim(),site='';
+  const known=[...S.cfg.custs].sort((a,b)=>b.length-a.length).find(c=>cust.replace(/\s/g,'').startsWith(c.replace(/\s/g,'')));
+  if(known){site=cust.replace(/\s/g,'').slice(known.replace(/\s/g,'').length);cust=known}
+  let qty=v('E13');if(typeof qty==='number')qty=qty+'EA';
+  const r=newRec();delete r._new;
+  Object.assign(r,{cust,site,car:s('E9'),part,occDate:normDate(v('E11')),qty:String(qty||''),cause:s('J10')+(s('J11')?'\n'+s('J11'):''),action:s('V10'),doneDate:normDate(v('AK11')),
+    chkDate:normDate(v('E4')),inspector:s('E6'),scores:[17,18,19,20,21,22,23,24,25].map(i=>num('AI'+i)),opinions:[17,18,19,20,21,22,23,24].map(i=>s('V'+i)),summary:s('E25')});
+  r.dueDate=addDays(r.doneDate,+S.cfg.dueDays||30);
+  r.monFrom=today();
+  custRule(r);
+  return r;
+}
+function dupOf(r){return S.recs.find(x=>x.part.replace(/\s/g,'')===r.part.replace(/\s/g,'')&&x.occDate===r.occDate)}
+function showImp(){
+  if(!IMP.length){$('#impv').innerHTML='<div class="hint">양식에 맞는 시트를 찾지 못했습니다.</div>';return}
+  $('#impv').innerHTML=`<div class="tw"><table class="t"><tr><th><input type="checkbox" checked onchange="document.querySelectorAll('.impc').forEach(c=>c.checked=this.checked)"></th><th>품명</th><th>고객사</th><th>발생일</th><th class="c">점수</th><th>비고</th></tr>${IMP.map((r,i)=>{const d=dupOf(r);return`<tr><td><input type="checkbox" class="impc" data-i="${i}" ${d?'':'checked'}></td><td><b>${esc(r.part)}</b><div class="muted">${esc(r.src)}</div></td><td>${esc(custLabel(r))}</td><td class="nw">${fmtD(r.occDate)}</td><td class="c">${complete(r)?total(r):'-'}</td><td>${d?'<span class="tag w">중복(덮어쓰기)</span>':'<span class="tag ok">신규</span>'}</td></tr>`}).join('')}</table></div>
+  <div style="margin-top:10px"><button class="btn p" onclick="doImp()">선택 항목 가져오기</button></div>`;
+}
+function doImp(){
+  let a=0,u=0;
+  document.querySelectorAll('.impc:checked').forEach(c=>{
+    const r=IMP[+c.dataset.i];r.ua=nowISO();r.src='엑셀 가져오기: '+r.src;
+    const d=dupOf(r);
+    if(d){r.id=d.id;r.appr=d.appr;r.created=d.created;for(const k of ['files','acts','mons','xdel','monFrom','legacy'])if(d[k]!==undefined)r[k]=d[k];S.recs[S.recs.indexOf(d)]=r;u++}else{S.recs.push(r);a++}
+  });
+  saveLocal();schedulePush();IMP=[];toast(`신규 ${a}건 · 갱신 ${u}건`);render();
+}
+function exportXlsx(list){
+  if(!window.XLSX){toast('엑셀 라이브러리를 불러오지 못했습니다');return}
+  const rows=list.map(r=>{const o={'관리번호':recNo(r),'고객사':r.cust,'발생처상세':r.site,'차종':r.car,'품명':r.part,'발생일':r.occDate,'발생수량':r.qty,'불량내용/원인':r.cause,'개선대책':r.action,'대책완료일':r.doneDate,'평가예정일':r.dueDate,'점검일':r.chkDate,'점검자':r.inspector};
+    ITEMS.forEach((it,i)=>{o[`${i+1}.평점(${it.m})`]=r.scores[i];o[`${i+1}.평가의견`]=r.opinions[i]});
+    o['종합의견']=r.summary;o['종합의견평점(20)']=r.scores[8];o['합계']=complete(r)?total(r):'';o['판정']=judge(r)?JT[judge(r)][0]:'';o['상태']=STT[status(r)][0];
+    o['검토']=r.appr&&r.appr.review?r.appr.review.n+' '+r.appr.review.d:'';o['승인']=r.appr&&r.appr.approve?r.appr.approve.n+' '+r.appr.approve.d:'';
+    o['증빙첨부']=(r.files||[]).length;o['증빙연결항목']=evCover(r)+'/'+ITEMS.length;
+    o['要후속조치']=(r.acts||[]).length;o['要미완료']=openActs(r).length;o['要미완료내용']=openActs(r).map(a=>a.text+(a.owner?' ('+a.owner+')':'')+(a.due?' ~'+a.due:'')).join('\n');
+    monList(r).forEach(x=>{o[x.m+'개월 확인']=x.res?(x.res.res==='OK'?'재발없음':'재발')+' '+x.res.d:(x.active?'예정 '+x.due:'대상외')});return o});
+  const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'유효성검증');
+  XLSX.writeFile(wb,'품질개선_유효성검증_'+today()+'.xlsx');
+}
+function backup(){const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='유효성검증_백업_'+today()+'.json';a.click()}
+function restore(f){if(!f)return;const fr=new FileReader();fr.onload=e=>{try{const j=JSON.parse(e.target.result);if(!Array.isArray(j.recs))throw 0;if(!confirm(j.recs.length+'건으로 병합 복원합니다.'))return;j.recs.forEach(r=>r.ua=nowISO());S=mergeState(S,j);saveLocal();schedulePush();render();toast('복원 완료')}catch(x){toast('백업 파일 형식 오류')}};fr.readAsText(f)}
+
+/* ---------- config ---------- */
+function vCfg(){
+  const a=isAppr(),dis=a?'':'disabled';
+  let h=`<div class="ph"><h2>기준정보</h2>${a?'':'<span class="muted">변경은 승인자만 가능합니다</span>'}</div>
+  <div class="grid2"><div class="panel"><h3>체크 항목 · 배점 <span class="muted">${FORM_NO}</span></h3><div class="tw"><table class="t"><tr><th>구분</th><th>NO</th><th>체크 항목</th><th class="c">배점</th></tr>${ITEMS.map((it,i)=>`<tr><td class="nw">${esc(it.g)}</td><td>${i+1}</td><td>${esc(it.t)}</td><td class="c">${it.m}</td></tr>`).join('')}<tr><td>종합의견</td><td></td><td>점검자 종합의견</td><td class="c">${SUM_MAX}</td></tr><tr><td colspan="3" class="rt"><b>합계</b></td><td class="c"><b>100</b></td></tr></table></div>
+  <div class="muted" style="margin-top:8px">판정: 80점 이상 Accept / 60점 이상 Reject(기존대책 보완) / 60점 미만 Reject(대책 재수립)</div></div>
+  <div><div class="panel"><h3>고객사 목록</h3><div class="f"><textarea id="c_custs" ${dis} style="min-height:120px">${esc(S.cfg.custs.join('\n'))}</textarea></div><div class="muted">한 줄에 하나씩. 발생처 상세(공장·라인)는 등록 시 별도 입력.</div>
+   <div class="f" style="margin-top:10px;max-width:220px"><label>평가 예정일 = 대책 완료일 + (일)</label><input id="c_due" type="number" value="${S.cfg.dueDays}" ${dis}></div></div>
+  <div class="panel"><h3>사용자 (PIN)</h3><div class="tw"><table class="t"><tr><th>이름</th><th>권한</th>${a?'<th>PIN</th><th></th>':''}</tr>${S.cfg.users.map((u,i)=>`<tr><td>${esc(u.n)}</td><td>${u.r==='A'?'<span class="tag b">승인자</span>':'<span class="tag n">작성자</span>'}</td>${a?`<td>${esc(u.pin)}</td><td><button class="btn s d" onclick="delUser(${i})">삭제</button></td>`:''}</tr>`).join('')}</table></div>
+   ${a?`<div class="flt" style="margin-top:10px"><input id="u_n" placeholder="이름" style="width:110px"><input id="u_p" placeholder="PIN 4자리" inputmode="numeric" style="width:110px"><select id="u_r"><option value="W">작성자</option><option value="A">승인자</option></select><button class="btn" onclick="addUser()">추가</button></div>`:''}</div>
+  ${a?`<button class="btn p" onclick="saveCfg()">💾 기준정보 저장</button>`:''}</div></div>`;
+  return h;
+}
+function saveCfg(){
+  S.cfg.custs=$('#c_custs').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  S.cfg.dueDays=Math.max(0,+$('#c_due').value||30);S.cfg.ua=nowISO();saveLocal();schedulePush();toast('저장되었습니다');render();
+}
+function addUser(){
+  const n=$('#u_n').value.trim(),p=$('#u_p').value.trim(),r=$('#u_r').value;
+  if(!n||!/^\d{4,6}$/.test(p)){toast('이름과 PIN(4~6자리 숫자)을 입력하세요');return}
+  if(S.cfg.users.some(u=>u.pin===p)){toast('이미 사용 중인 PIN입니다');return}
+  S.cfg.users.push({pin:p,n,r});S.cfg.ua=nowISO();saveLocal();schedulePush();render();
+}
+function delUser(i){
+  const u=S.cfg.users[i];if(S.cfg.users.filter(x=>x.r==='A').length<=1&&u.r==='A'){toast('승인자는 최소 1명 필요합니다');return}
+  if(!confirm(u.n+' 삭제?'))return;S.cfg.users.splice(i,1);S.cfg.ua=nowISO();saveLocal();schedulePush();render();
+}
+
+/* ---------- boot ---------- */
+(function(){
+  const l=loadLocal();
+  if(l){S=mergeState({recs:[],del:{},cfg:DEF_CFG},l);migrate(S)}else{S.recs=seedRecs();S._fresh=true}
+  render();
+  sync(true);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
+  window.addEventListener('online',()=>sync());
+})();
+</script>
+</body>
+</html>
