@@ -178,7 +178,7 @@ table.ck input.sc.bad{border-color:var(--ng);background:#FFF3F1}
 <div class="toast" id="toast"></div>
 <script>
 'use strict';
-const VER='v1.2';
+const VER='v1.3';
 const SB_URL='https://ebthltdmxpzlkfwvdloz.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidGhsdGRteHB6bGtmd3ZkbG96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNTcxNTQsImV4cCI6MjA5MDczMzE1NH0.bXqNpOtDMCFjuZROrIDm_3o0kHmNESs7EHOgGnFCxAM';
 const KV='tj_effect_eval_v1', LS='tj_effect_eval_v1', LSU='tj_effect_eval_user';
@@ -352,8 +352,8 @@ const openActs=r=>(r.acts||[]).filter(a=>!a.done);
 const evCover=r=>{const s=new Set((r.files||[]).filter(f=>f.item!==''&&f.item!=null).map(f=>+f.item));return ITEMS.filter((x,i)=>s.has(i)).length};
 function monBadges(r){
   const L=monList(r);if(!L.length)return'<span class="muted">-</span>';
-  return L.map(x=>{let c='n',t='◷';if(!x.active){c='n';t='–'}else if(x.res){c=x.res.res==='OK'?'ok':'ng';t=x.res.res==='OK'?'✓':'✗'}else if(dday(x.due)<0){c='w';t='!'}
-    return`<span class="tag ${c}" title="${x.m}개월 ${x.due}${x.active?'':' (이관 전 도래분·대상외)'}" style="padding:1px 6px;font-size:11px">${x.m}M${t}</span>`}).join(' ');
+  return L.map(x=>{let c='n',t='◷';if(x.res){c=x.res.res==='OK'?'ok':'ng';t=x.res.res==='OK'?'✓':'✗'}else if(!x.active){c='n';t='–'}else if(dday(x.due)<0){c='w';t='!'}
+    return`<span class="tag ${c}" title="${x.m}개월 ${x.due}${x.res?' '+(x.res.res==='OK'?'재발 없음':'재발'):(x.active?'':' (이관 전 도래분·대상외)')}" style="padding:1px 6px;font-size:11px">${x.m}M${t}</span>`}).join(' ');
 }
 const canEdit=()=>!!USER;
 const isAppr=()=>USER&&USER.r==='A';
@@ -702,7 +702,7 @@ function splitReq(t){
 function extractActs(){
   const r=CUR,have=new Set((r.acts||[]).map(a=>a.text.replace(/\s/g,'')));const L=[];
   splitReq(r.summary).forEach(t=>L.push(t));
-  (r.opinions||[]).forEach((o,i)=>splitReq(o).forEach(t=>L.push(`[${i+1}번] ${t}`)));
+  (r.opinions||[]).forEach((o,i)=>splitReq(String(o||'').replace(/\s*\n\s*/g,' ')).forEach(t=>L.push(`[${i+1}번] ${t}`)));
   const add=L.filter(t=>!have.has(t.replace(/\s/g,'')));
   if(!add.length){toast("가져올 '要' 사항이 없습니다 (이미 등록됨)");return}
   const due=addDays(today(),30);
