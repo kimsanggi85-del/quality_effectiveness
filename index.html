@@ -178,7 +178,7 @@ table.ck input.sc.bad{border-color:var(--ng);background:#FFF3F1}
 <div class="toast" id="toast"></div>
 <script>
 'use strict';
-const VER='v1.6';
+const VER='v1.7';
 const SB_URL='https://omngtyewdaqpphnzeate.supabase.co';
 const SB_KEY='sb_publishable_9j2YkkL-7ul1TrhH-NjVdQ_vWDG2-1D';
 const KV='tj_effect_eval_v1', LS='tj_effect_eval_v1', LSU='tj_effect_eval_user';
@@ -858,15 +858,24 @@ const nearest=(c,ds,lim,gap)=>{
   const sc=c.map(r=>({r,g:Math.min(...ds.map(d=>Math.min(dgap(d,r.occDate),dgap(d,r.doneDate))))})).sort((x,y)=>x.g-y.g);
   return sc[0].g<=lim&&(sc.length<2||sc[1].g-sc[0].g>=gap)?sc[0].r:null;
 };
-function bulkMatch(path,mt){
-  const P=pnorm(path),ds=pathDates(path);let best=0,c=[];
-  for(const r of S.recs){
-    let L=0;for(const t of String(r.part||'').split(/[\n,\/]+/)){const k=pnorm(t);if(k.length>=5&&P.includes(k))L=Math.max(L,k.length)}
-    if(!L)continue;if(L>best){best=L;c=[r]}else if(L===best)c.push(r);
+// 품번 일치 길이. core=true 이면 앞 영문(IW-BDA- 등)을 뗀 번호(1106CB)만으로 찾음
+function partHit(path,part,core){
+  const P=pnorm(path),U=path.toUpperCase();let L=0;
+  for(const t of String(part||'').split(/[\n,\/]+/)){
+    const k=pnorm(t);
+    if(!core){if(k.length>=5&&P.includes(k))L=Math.max(L,k.length);continue}
+    const c=k.replace(/^[A-Z]+/,'');if(c===k||c.length<4)continue;
+    if(new RegExp('(?<![0-9])'+c+'(?![0-9])').test(U))L=Math.max(L,c.length);
   }
+  return L;
+}
+function bulkMatch(path,mt){
+  const ds=pathDates(path);let best=0,c=[],core=false;
+  const scan=cr=>{for(const r of S.recs){const L=partHit(path,r.part,cr);if(!L)continue;if(L>best){best=L;c=[r]}else if(L===best)c.push(r)}};
+  scan(false);if(!c.length){core=true;scan(true)}
   if(!c.length)return{id:'',how:'none',cands:[]};
   const cands=c.map(r=>r.id);
-  if(c.length===1)return{id:c[0].id,how:'part',cands};
+  if(c.length===1)return{id:c[0].id,how:core?'core':'part',cands};
   let r;
   if(ds.length&&(r=nearest(c,ds,45,7)))return{id:r.id,how:'date',cands};
   if(!ds.length&&mt&&(r=nearest(c,[mt],30,14)))return{id:r.id,how:'mtime',cands};
@@ -874,13 +883,16 @@ function bulkMatch(path,mt){
 }
 const isDup=(r,f)=>!!r&&(r.files||[]).some(x=>x.name===f.name&&(x.osize??x.size)===f.size);
 function bulkRead(list){
-  if(!USER){login();return}
-  const fl=[...list].filter(f=>!/^(~\$|\.)/.test(f.name)&&!/^thumbs\.db$/i.test(f.name)&&BULK_EXT.test(f.name));
-  if(!fl.length){toast('첨부 가능한 대책서 파일이 없습니다');return}
+  const all=[...list];
+  if(!USER){login(()=>{go('data');bulkRead(all)});return}
+  const fl=all.filter(f=>!/^(~\$|\.)/.test(f.name)&&!/^thumbs\.db$/i.test(f.name)&&BULK_EXT.test(f.name));
+  if(!fl.length){BULK=null;$('#bulkv').innerHTML=`<div class="hint">선택한 파일 ${all.length}개 중 첨부할 수 있는 형식(PDF·엑셀·워드·PPT·한글·사진)이 없습니다.</div>`;$('#bulkp').scrollIntoView({behavior:'smooth'});return}
   const rows=fl.map(f=>{const path=f.webkitRelativePath||f.name,m=bulkMatch(path,f.lastModified?locD(f.lastModified):'');return{f,path,img:/\.(jpe?g|png)$/i.test(f.name),...m,st:f.size>20e6?'big':'',msg:''}});
   rows.forEach(x=>bulkChk(x));
-  const ord={multi:0,mtime:1,none:2,date:3,part:4};rows.sort((a,b)=>ord[a.how]-ord[b.how]||a.path.localeCompare(b.path));
-  BULK={rows,busy:false,none:false,img:false};$('#bulkv').innerHTML=bulkHtml();
+  const ord={multi:0,mtime:1,core:2,none:3,date:4,part:5};rows.sort((a,b)=>ord[a.how]-ord[b.how]||a.path.localeCompare(b.path));
+  // 연결된 파일이 하나도 없으면 미연결 목록을 바로 보여줘 직접 고를 수 있게 함
+  const hit=rows.some(x=>x.how!=='none'&&!x.img);
+  BULK={rows,busy:false,none:!hit,img:false,skip:all.length-fl.length};$('#bulkv').innerHTML=bulkHtml();$('#bulkp').scrollIntoView({behavior:'smooth'});
 }
 function bulkChk(x){if(x.st==='big'||x.st==='ok')return;x.st=isDup(S.recs.find(r=>r.id===x.id),x.f)?'dup':''}
 const bulkOn=x=>x.id&&!x.st&&(BULK.img||!x.img);
@@ -889,11 +901,12 @@ function bulkHtml(){
   if(!BULK)return'';
   const R=BULK.rows,recs=[...S.recs].sort((a,b)=>(b.occDate||'').localeCompare(a.occDate||''));
   const lab=r=>esc(`${recNo(r)} · ${String(r.part||'').split('\n')[0]} · ${fmtD(r.occDate)} · ${custLabel(r)}`);
-  const HOW={part:['품번 일치','ok'],date:['품번+날짜','ok'],mtime:['수정일 추정','w'],multi:['확인 필요','w'],none:['미연결','n']};
+  const HOW={part:['품번 일치','ok'],date:['품번+날짜','ok'],mtime:['수정일 추정','w'],core:['번호만 일치','w'],multi:['확인 필요','w'],none:['미연결','n']};
   const STX={big:['20MB 초과','ng'],dup:['이미 첨부','n'],ok:['완료','ok'],err:['실패','ng'],up:['업로드 중','b']};
   const go_=R.filter(bulkOn).length,cnt=k=>R.filter(x=>x.how===k).length,ni=R.filter(x=>x.img).length;
   const V=R.filter(x=>(BULK.none||x.how!=='none')&&(BULK.img||!x.img));
-  let h=`<div class="flt"><span class="muted">파일 ${R.length}개 · 자동연결 ${cnt('part')+cnt('date')} · <span style="color:var(--warn)">확인 필요 ${cnt('multi')+cnt('mtime')}</span> · 미연결 ${cnt('none')}</span>
+  let h=`${!R.some(x=>x.how!=='none')?`<div class="hint">파일명·폴더명에서 등록된 품번을 찾지 못했습니다. 아래 목록에서 파일마다 연결할 검증 건을 직접 고른 뒤 업로드하세요.</div>`:''}
+   <div class="flt"><span class="muted">파일 ${R.length}개${BULK.skip?` (형식 제외 ${BULK.skip}개)`:''} · 자동연결 ${cnt('part')+cnt('date')} · <span style="color:var(--warn)">확인 필요 ${cnt('multi')+cnt('mtime')+cnt('core')}</span> · 미연결 ${cnt('none')}</span>
    <label class="muted"><input type="checkbox" ${BULK.none?'checked':''} onchange="BULK.none=this.checked;$('#bulkv').innerHTML=bulkHtml()"> 미연결 파일 보기</label>
    <label class="muted"><input type="checkbox" ${BULK.img?'checked':''} ${BULK.busy?'disabled':''} onchange="BULK.img=this.checked;$('#bulkv').innerHTML=bulkHtml()"> 사진(jpg·png) ${ni}개 포함</label><span class="sp"></span>
    <button class="btn p" ${go_&&!BULK.busy?'':'disabled'} onclick="bulkUp()">⬆ ${go_}건 업로드</button><button class="btn" ${BULK.busy?'disabled':''} onclick="BULK=null;$('#bulkv').innerHTML=''">닫기</button></div>
