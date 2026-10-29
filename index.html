@@ -840,7 +840,7 @@ function printRecs(list){
 /* ---------- 대책서 일괄 첨부 (공유폴더) ---------- */
 const BULK_ACC='.pdf,.xlsx,.xls,.xlsm,.docx,.doc,.pptx,.ppt,.hwp,.hwpx,.jpg,.jpeg,.png';
 const BULK_EXT=/\.(pdf|xlsx|xls|xlsm|docx|doc|pptx|ppt|hwp|hwpx|jpe?g|png)$/i;
-let BULK=null; // {rows:[{f,path,id,how,cands,st,msg}],busy}
+let BULK=null; // {rows:[{f,path,img,id,how,cands,st,msg}],busy,none,img}
 const pnorm=s=>String(s||'').toUpperCase().replace(/[^0-9A-Z]/g,'');
 function pathDates(p){
   const out=[],add=(y,m,d)=>{y=+y;if(y<100)y+=2000;m=+m;d=+d;if(y>=2015&&y<=2040&&m>=1&&m<=12&&d>=1&&d<=31)out.push(y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0'))};
@@ -849,8 +849,12 @@ function pathDates(p){
   return out;
 }
 const dgap=(a,b)=>a&&b?Math.abs((new Date(a+'T00:00:00')-new Date(b+'T00:00:00'))/864e5):Infinity;
-// 경로 속 가장 긴 품번이 일치하는 건 → 여러 건이면 날짜로 선택
-function bulkMatch(path){
+// 경로 속 가장 긴 품번이 일치하는 건 → 여러 건이면 경로 날짜, 없으면 파일 수정일로 선택
+const nearest=(c,ds,lim,gap)=>{
+  const sc=c.map(r=>({r,g:Math.min(...ds.map(d=>Math.min(dgap(d,r.occDate),dgap(d,r.doneDate))))})).sort((x,y)=>x.g-y.g);
+  return sc[0].g<=lim&&(sc.length<2||sc[1].g-sc[0].g>=gap)?sc[0].r:null;
+};
+function bulkMatch(path,mt){
   const P=pnorm(path),ds=pathDates(path);let best=0,c=[];
   for(const r of S.recs){
     let L=0;for(const t of String(r.part||'').split(/[\n,\/]+/)){const k=pnorm(t);if(k.length>=5&&P.includes(k))L=Math.max(L,k.length)}
@@ -859,10 +863,9 @@ function bulkMatch(path){
   if(!c.length)return{id:'',how:'none',cands:[]};
   const cands=c.map(r=>r.id);
   if(c.length===1)return{id:c[0].id,how:'part',cands};
-  if(ds.length){
-    const sc=c.map(r=>({r,g:Math.min(...ds.map(d=>Math.min(dgap(d,r.occDate),dgap(d,r.doneDate))))})).sort((x,y)=>x.g-y.g);
-    if(sc[0].g<=45&&(sc.length<2||sc[1].g-sc[0].g>=7))return{id:sc[0].r.id,how:'date',cands};
-  }
+  let r;
+  if(ds.length&&(r=nearest(c,ds,45,7)))return{id:r.id,how:'date',cands};
+  if(!ds.length&&mt&&(r=nearest(c,[mt],30,14)))return{id:r.id,how:'mtime',cands};
   return{id:'',how:'multi',cands};
 }
 const isDup=(r,f)=>!!r&&(r.files||[]).some(x=>x.name===f.name&&(x.osize??x.size)===f.size);
@@ -870,25 +873,30 @@ function bulkRead(list){
   if(!USER){login();return}
   const fl=[...list].filter(f=>!/^(~\$|\.)/.test(f.name)&&!/^thumbs\.db$/i.test(f.name)&&BULK_EXT.test(f.name));
   if(!fl.length){toast('첨부 가능한 대책서 파일이 없습니다');return}
-  const rows=fl.map(f=>{const path=f.webkitRelativePath||f.name,m=bulkMatch(path);return{f,path,...m,st:f.size>20e6?'big':'',msg:''}});
+  const rows=fl.map(f=>{const path=f.webkitRelativePath||f.name,m=bulkMatch(path,f.lastModified?locD(f.lastModified):'');return{f,path,img:/\.(jpe?g|png)$/i.test(f.name),...m,st:f.size>20e6?'big':'',msg:''}});
   rows.forEach(x=>bulkChk(x));
-  const ord={multi:0,none:1,date:2,part:3};rows.sort((a,b)=>ord[a.how]-ord[b.how]||a.path.localeCompare(b.path));
-  BULK={rows,busy:false};$('#bulkv').innerHTML=bulkHtml();
+  const ord={multi:0,mtime:1,none:2,date:3,part:4};rows.sort((a,b)=>ord[a.how]-ord[b.how]||a.path.localeCompare(b.path));
+  BULK={rows,busy:false,none:false,img:false};$('#bulkv').innerHTML=bulkHtml();
 }
 function bulkChk(x){if(x.st==='big'||x.st==='ok')return;x.st=isDup(S.recs.find(r=>r.id===x.id),x.f)?'dup':''}
+const bulkOn=x=>x.id&&!x.st&&(BULK.img||!x.img);
 function bulkSet(i,v){const x=BULK.rows[i];x.id=v;bulkChk(x);$('#bulkv').innerHTML=bulkHtml()}
 function bulkHtml(){
   if(!BULK)return'';
   const R=BULK.rows,recs=[...S.recs].sort((a,b)=>(b.occDate||'').localeCompare(a.occDate||''));
   const lab=r=>esc(`${recNo(r)} · ${String(r.part||'').split('\n')[0]} · ${fmtD(r.occDate)} · ${custLabel(r)}`);
-  const HOW={part:['품번 일치','ok'],date:['품번+날짜','ok'],multi:['확인 필요','w'],none:['미연결','n']};
+  const HOW={part:['품번 일치','ok'],date:['품번+날짜','ok'],mtime:['수정일 추정','w'],multi:['확인 필요','w'],none:['미연결','n']};
   const STX={big:['20MB 초과','ng'],dup:['이미 첨부','n'],ok:['완료','ok'],err:['실패','ng'],up:['업로드 중','b']};
-  const go_=R.filter(x=>x.id&&!x.st).length,cnt=k=>R.filter(x=>x.how===k).length;
-  let h=`<div class="flt"><span class="muted">파일 ${R.length}개 · 자동연결 ${cnt('part')+cnt('date')} · <span style="color:var(--warn)">확인 필요 ${cnt('multi')}</span> · 미연결 ${cnt('none')}</span><span class="sp"></span>
+  const go_=R.filter(bulkOn).length,cnt=k=>R.filter(x=>x.how===k).length,ni=R.filter(x=>x.img).length;
+  const V=R.filter(x=>(BULK.none||x.how!=='none')&&(BULK.img||!x.img));
+  let h=`<div class="flt"><span class="muted">파일 ${R.length}개 · 자동연결 ${cnt('part')+cnt('date')} · <span style="color:var(--warn)">확인 필요 ${cnt('multi')+cnt('mtime')}</span> · 미연결 ${cnt('none')}</span>
+   <label class="muted"><input type="checkbox" ${BULK.none?'checked':''} onchange="BULK.none=this.checked;$('#bulkv').innerHTML=bulkHtml()"> 미연결 파일 보기</label>
+   <label class="muted"><input type="checkbox" ${BULK.img?'checked':''} ${BULK.busy?'disabled':''} onchange="BULK.img=this.checked;$('#bulkv').innerHTML=bulkHtml()"> 사진(jpg·png) ${ni}개 포함</label><span class="sp"></span>
    <button class="btn p" ${go_&&!BULK.busy?'':'disabled'} onclick="bulkUp()">⬆ ${go_}건 업로드</button><button class="btn" ${BULK.busy?'disabled':''} onclick="BULK=null;$('#bulkv').innerHTML=''">닫기</button></div>
    <div class="muted" id="bulk_st" style="margin-bottom:6px"></div>
    <div class="tw"><table class="t"><tr><th>파일 (폴더 경로)</th><th>연결할 검증 건</th><th class="c">연결</th><th class="c">상태</th></tr>`;
-  h+=R.map((x,i)=>{const cs=x.cands.map(id=>S.recs.find(r=>r.id===id)).filter(Boolean),rest=recs.filter(r=>!x.cands.includes(r.id));
+  if(!V.length)h+=`<tr><td colspan="4" class="muted" style="text-align:center">표시할 파일이 없습니다 (품번이 들어있는 파일 없음)</td></tr>`;
+  h+=V.map(x=>{const i=R.indexOf(x),cs=x.cands.map(id=>S.recs.find(r=>r.id===id)).filter(Boolean),rest=recs.filter(r=>!x.cands.includes(r.id));
     const sel=`<select style="max-width:340px" ${BULK.busy||x.st==='ok'?'disabled':''} onchange="bulkSet(${i},this.value)"><option value="">— 첨부 안 함 —</option>${cs.length?`<optgroup label="품번 후보">${cs.map(r=>`<option value="${r.id}" ${r.id===x.id?'selected':''}>${lab(r)}</option>`).join('')}</optgroup>`:''}<optgroup label="전체">${rest.map(r=>`<option value="${r.id}" ${r.id===x.id?'selected':''}>${lab(r)}</option>`).join('')}</optgroup></select>`;
     const st=x.st?STX[x.st]:x.id?['대기','b']:['-','n'];
     return`<tr><td><div class="ell" style="max-width:420px" title="${esc(x.path)}">${esc(x.path)}</div><div class="muted">${(x.f.size/1048576).toFixed(1)}MB</div></td><td>${sel}</td><td class="c"><span class="tag ${HOW[x.how][1]}">${HOW[x.how][0]}</span></td><td class="c"><span class="tag ${st[1]}" title="${esc(x.msg)}">${st[0]}</span></td></tr>`}).join('');
@@ -896,7 +904,7 @@ function bulkHtml(){
 }
 async function bulkUp(){
   if(!USER){login();return}
-  const todo=BULK.rows.filter(x=>x.id&&!x.st);if(!todo.length)return;
+  const todo=BULK.rows.filter(bulkOn);if(!todo.length)return;
   if(!confirm(`대책서 ${todo.length}건을 '${DOC_CAT}'(으)로 첨부합니다.`))return;
   BULK.busy=true;let ok=0,n=0;
   for(const x of todo){
@@ -927,6 +935,8 @@ function vData(){
   <div class="panel" style="margin-top:14px"><h3>📁 유출불량 대책서 일괄 첨부 <span class="muted">서버 공유폴더 → 검증 건 자동 연결</span></h3>
    <div class="muted" style="margin-bottom:10px;line-height:1.7">· [폴더 선택] 창에서 서버 공유폴더(네트워크 드라이브 또는 <code>\\\\서버\\폴더</code> 주소 입력)의 대책서 폴더를 고르면 하위 폴더까지 모두 읽습니다.<br>
     · 폴더명·파일명에 들어있는 <b>품번</b>으로 건을 찾고, 같은 품번이 여러 건이면 <b>날짜</b>(예: 20250514, 2025-05-14, 250514)로 발생일·대책완료일과 가장 가까운 건을 고릅니다.<br>
+    · 경로에 날짜가 없으면 파일 수정일로 추정하고 '수정일 추정'으로 표시합니다. 이때는 연결이 맞는지 꼭 확인하세요.<br>
+    · 고객사 폴더가 여럿인 상위 폴더(예: 불량대응\\유출불량)를 통째로 골라도 됩니다. 품번이 없는 파일(양식 등)은 자동으로 빠지고, 사진은 기본 제외입니다.<br>
     · 이미 같은 이름·크기로 첨부된 파일은 건너뜁니다. 업로드 전 연결 결과를 확인·수정할 수 있습니다.</div>
    ${canEdit()?`<div class="flt"><label class="btn p">📁 폴더 선택<input type="file" webkitdirectory directory multiple hidden onchange="bulkRead(this.files);this.value=''"></label>
     <label class="btn">📄 파일 선택<input type="file" multiple hidden accept="${BULK_ACC}" onchange="bulkRead(this.files);this.value=''"></label></div>`:'<div class="hint">로그인 후 사용할 수 있습니다.</div>'}
