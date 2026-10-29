@@ -178,7 +178,7 @@ table.ck input.sc.bad{border-color:var(--ng);background:#FFF3F1}
 <div class="toast" id="toast"></div>
 <script>
 'use strict';
-const VER='v1.3';
+const VER='v1.5';
 const SB_URL='https://omngtyewdaqpphnzeate.supabase.co';
 const SB_KEY='sb_publishable_9j2YkkL-7ul1TrhH-NjVdQ_vWDG2-1D';
 const KV='tj_effect_eval_v1', LS='tj_effect_eval_v1', LSU='tj_effect_eval_user';
@@ -197,11 +197,12 @@ const SUM_MAX=20; // 점검자 종합의견 배점
 const BUCKET='kimsanggi85_database', FOLDER='effect_eval';
 const MON_START='2026-09-29'; // 사후 모니터링 적용 시작(이관분은 이 날짜 이후 도래분만 대상)
 const MONS=[3,6,12];
-const FCATS=['개선 전','개선 후','작업표준·게시','교육일지','양산 Test 성적','기타'];
+const DOC_CAT='유출불량 대책서';
+const FCATS=[DOC_CAT,'개선 전','개선 후','작업표준·게시','교육일지','양산 Test 성적','기타'];
 const MAXS=[...ITEMS.map(x=>x.m),SUM_MAX];
 const DEF_CFG={custs:['SBC','SKF ATC','SKF씰','세동','ATC','부강스프링','진양오일씰','일진'],dueDays:30,
  users:[{pin:'4001',n:'강병주',r:'A'},{pin:'4003',n:'김상기',r:'A'},{pin:'4005',n:'오현민',r:'A'}],ua:'2000-01-01T00:00:00.000Z'};
-const SEED=[["2024-07-17", "2024-10-16", "김상기", "SKF씰", "3공장", "JA", "1952-0056-01", "다량", "▣BENDING 다이마모로 단높이 치수NG 발생됨", "1. 밴딩다이 마모주기 설정 하여 MES 등록 주기 도래시 알람발생\n2. 일별 X_R 관리도 체크 및 변동사항 점검실시", "2024-07-24", [10, 7, 7, 10, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "밴딩다이 마모지기 MES 등록 도래시 알람발생", "일별 X_R 관리도 체크", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要      3.일별 X_R 점검 강화"], ["2024-08-15", "2024-11-21", "김상기", "SKF ATC", "", "MSBU RING", "BDA-1106CA", "1EA", "1) 열처리 방청후 스틸재질의 적재바로 박스에 포장중 \n   모서리부에 찍힘\n2) 검사기 회전판 내에서 제품 걸림으로 인한 찍힘", "1) 열처리 포장 적재바 모서리부를 Round형태로 변경 \n2) 검사기 회전판 내에서 제품걸림 및 낙하 제품 폐기실시", "2024-08-22", [10, 6, 7, 9, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "열처리 포장 적재바 모서리부 Round상태 확인", "검사기 회전판걸림 제품은 즉시 폐기 되고있으며\n낙하품표준류 비치되어있음", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 16,500ea 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要"], ["2024-09-05", "2024-12-04", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1113AA", "1EA", "1.소재투입시 1피치씩 수작업으로 스템핑하므로 타발되는 위치가 어긋나는 경우가 발생됨 작업자는 수작업으로 스탬핑한 제품은 구분해서 폐기하여야 하나 구분이 미흡하여 혼입됨\n2.검사기에서 배출된 휨불량(진원도 or 높이) 재검시 높이게이지를 통과하며 육안검사시 미검출됨검사기에서 배출된 휨불량(진원도 or 높이) 재검시 높이게이지를 통과하며 육안검사시 미검출됨", "1) 소재 투입시 투입부분 상단에 마킹을 실시하여 수작업 스템핑 \n   제품이 식별될수 있도록 함\n2) 고품을 검사실 내에 한도견본으로 비치하고 검사자 교육을 실시함", "2024-09-05", [10, 6, 7, 9, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "시업전 NG마스터를 검사기에 넣어 점검실시중\n(NG마스터 검출됨)", "소재 투입시 투입부 상단 마킹후 스템핑 실시중", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품1 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要"], ["2024-09-10", "2024-12-09", "김상기", "SKF ATC", "", "MSBU RING", "OW-BDA-1179", "다량", "1) 기종교환시 잔량품 혼입으로 추정됨\n2) 잔량품은 외관검사만 실시하여 포장실시\n3) 혼입방지 교육을 실시하고 있으나 년1회만 실시", "1) 잔량품 투입시 사이즈표 대조확인\n2) 혼입 방지를 위한 작업자 교육훈련 분기별 실시\n3) 외관검사후 검사기 투입", "2024-09-13", [10, 6, 7, 9, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "혼입방지 교육을 분기별로 실시하고 있음", "잔량품 투입시 사이즈 대조표 확인후 잔량품 투입하고있음", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要  2. 작업전/후 구분관리 강화 要  3. 혼입방지를 위해 분기별 교육을 실시하고있음\n4. 잔량품 투입시 사이즈 대조표 사이즈확인 투입실시되어지고 있음"], ["2024-10-17", "", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1106CA", "1EA", "프레스 작업시 칩가루 찍힘으로 추정", "생산시 칩가루 찍힘을 방지하기 위하여 프레스 공정에 에어블로어를\n설치", "2024-10-18", [10, 6, 7, 9, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "금형일상점검 실시함", "금형일상저검 항목에 부쉬점검 항목 추가 관리", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要"], ["2024-10-28", "", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1113D", "2EA", "▣ #01(피어싱)의 스크랩이 부상하여   \n   #04(포밍) 공정으로 흘러가서 눌림 현상이 발생됨\n▣ 키커펀치가 약하여 스크랩을 밀어내지 못함\n    (#01 피어싱 공정)", "키커펀치의 핀 사이즈를 증대시킴\n(키커펀치 핀 2mm증대, 스프링 1.5배 증대)", "2024-11-01", [10, 7, 7, 9, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "금형일상점검 실시함", "금형일상저검 항목에 부쉬점검 항목 추가 관리", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要"], ["2024-11-20", "2024-11-21", "김상기", "SKF씰", "3공장", "A/S", "1839-629", "650EA", "▣내경피어싱 패드마모로 내경 하한치불량 발생됨\n52.19 ± 0.04 (G/A외)\nATC: 52.10~12(내경치수미달)", "1. 피어싱 마모주기 설정 하여 전산 등록 주기 도래시 알람발생\n2. GO/NO 게이지 제작하여 자주검사실시", "2024-11-25", [10, 7, 7, 10, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "키 피어싱 마모주기 설정 하여 전산 등록 주기 도래시 알람발생", "GO/NO 게이지 제작하여 자주검사실시", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要    3.순회검사 강화"], ["2025-03-04", "2025-03-06", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1106", "1EA", "IW-BDA-1156 제품혼입\n잔량품 투입전 대조 확인방법이 규정되지 않음", "잔량품 보관시 각아이템별 상세 식별표현장 비치후 보관장소로 이동함", "2025-03-06", [10, 7, 7, 9, 8, 7, 15, 15, 18], ["대책 적용후 불량 재발 없음", "잔량품 투입시 사이즈 대조확인 절차 수립되어 \n있으나 처리절차 게시 보완 要", "잔량품 식별표 비치 및 보관장소 이동 대책은 지속 유효함", "잔량품 보관시 식별표 부착 및 보관장소 이동여부\n일상점검 실시중", "잔량품 관리절차서 개정 완료 및 현장 게시 확인", "작업자 및 검사원 교육실시 완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과 혼입없음"], "1. 잔량품 관리절차서 개정 배포 및 현장 게시 확인\n2. 잔량품 투입시 사이즈 대조확인 일상점검 강화 要"], ["2025-05-13", "2025-05-14", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1106CB", "5EA", "1106 in 블랭킹 펀치 다이파손으로 그린 표시부 찍힘으로 슬립된 불량발생", "펀치다이 연마주기 10만타 → 9만타로 주기변경 연마 및 파손여부 확인으로 사전 불량예방", "2025-05-14", [10, 7, 7, 8, 8, 7, 15, 15, 18], ["대책 적용후 불량 재발 없음", "펀치다이 연마주기 변경(10만타→9만타)관련\n처리절차 게시 보완 要", "연마주기 단축 대책은 지속 유효함", "펀치다이 연마주기 및 파손여부 일상점검 기록관리 실시중", "불량발생시 알람벨 설치 완료, 부적합품 절차 표준류 반영 게시중", "작업자 교육실시 완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과 찍힘없음"], "1. 펀치다이 연마주기 준수 및 파손여부 일상점검 강화 要\n2. 부적합품 발생시 알람벨 작동여부 확인 要"], ["2025-07-23", "2025-08-05", "김상기", "SKF ATC", "", "MSBU RING", "OW-BDA-1179", "1EA", "OW-BDA-1156 제품혼입\n1179로 기종전환 후 1156을 발견할 경우 1179로 오판됨", "작업준비후 잔량확인 강화 (특히 검사기 내부 잔량확인후 QR코드인식)", "2025-08-05", [10, 7, 7, 9, 8, 7, 15, 15, 18], ["대책 적용후 불량 재발 없음", "기종전환시 잔량확인 절차 관련 처리절차 게시\n보완 要", "검사기 내부 잔량확인 및 QR코드인식 대책은 지속 유효함", "기종전환시 검사기 내부 잔량확인 및 QR코드인식 \n일상점검 실시중", "외상검점목록에 게이지 설정값 확인 항목 추가 \n관리중", "작업자 교육실시 완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과 혼입없음"], "1. 기종전환시 검사기 내부 잔량확인 철저 要\n2. 게이지 설정값 차별화 여부 지속관리 要"], ["2025-08-21", "2025-08-23", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1106CB", "1EA", "내경찍힘\n금형 취출부 검사와 하형 스크랩이 원활히 떨어지지 않음", "금형 하형 홀더 취출부의 각도를 기준 50°에서 30°로 가공 스크랩 취출시 하형 홀더에 간섭 받지 않고 취출", "2025-08-23", [10, 7, 7, 9, 8, 7, 15, 15, 18], ["대책 적용후 불량 재발 없음", "금형 하형 홀더 취출부 각도변경 관련 처리절차 게시 \n보완 要", "취출부 각도 50°→30° 변경 대책은 지속 유효함", "FMEA 불량사례 반영 완료, 금형 일상점검 기록관리 실시중", "분석의 표준 문서 업데이트 완료 및 현장 게시 확인", "검사자 및 생산작업자 교육훈련 실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과 찍힘없음"], "1. FMEA 불량 사례 반영 및 표준문서 업데이트 확인\n2. 금형 일상점검시 취출부 각도 상태 확인 강화 要"], ["2025-12-01", "2025-12-02", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1165A\nOW-BDA-1165A", "2EA", "인접한 설비 (좌, 우 1set) 에서 검사자 1명이 다른기종을 동시에 검사 작업할", "1.인접한 좌, 우 Set 로 배치된 설비에는 동일기종을 검사한다.", "2025-12-02", [10, 7, 7, 9, 8, 7, 15, 15, 18], ["대책 적용후 불량 재발 없음", "인접설비 동일기종 배치 관련 처리절차 게시 보완 要", "동일기종 검사 배치 대책은 지속 유효함", "제품혼입 방지를 위한 게이지 설정값 차별화 및 일상점검 실시중", "제품 이출시 라벨과 함께 이동 절차 표준류 반영 \n게시중", "작업자 교육실시 완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과 혼입없음"], "1. 인접설비 동일기종 배치여부 일상점검 강화 要\n2. 제품 이출시 라벨 부착 및 이동절차 준수 확인 要"], ["2026-01-22", "2026-06-10", "김상기", "SBC", "", "MSBU RING", "OW-BDA-1179", "다량", "OW-BDA-1179 혼입 (ATC 조립라인)\n발생: 투입 전 1차 확인만 존재, 이중 확인 체계 미흡\n유출: 오류 발생시 즉시 피드백(차단/알림) 체계 부재로 사후 대응 위주", "1. QR코드 기반 잔량 혼입방지 시스템 구축\n   A박스(QR)→수량 입력→B박스(QR) 스캔 후 자동 OK/NG 판정,\n   미스캔시 투입 불가(강제 게이트)\n2. OK/NG 판정 시뮬레이션 훈련교육 및 분기 1회 재교육", "2026-01-23", [10, 8, 7, 9, 8, 7, 13, 15, 18], ["QR 시스템 적용후 혼입 불량 재발 없음\n(태진재고 230,000EA 재검 결과 동일불량 없음)", "스캔 즉시 OK/NG 화면 표시, NG시 투입 차단\n이상발생 처리절차 운영중", "QR 강제 게이트 시스템 적용으로 작업자 임의 생략 불가,\n지속 유효한 대책임", "검사기록(일시/작업자/박스코드/수량/판정) Google Sheets실시간 저장, 월 1회 시스템 성능·운영데이터 점검 실시", "작업표준에 QR 스캔 및 OK/NG 판정 절차 반영 게시 관리중", "OK/NG 판정 시뮬레이션 훈련교육 실시 완료,\n분기 1회 재교육 계획 수립", "전기종 확대 전개 진행중\n(유사 혼입 위험 공정 포함 적용 검토)", "양산 적용후 검사기록 전수 타임스탬프 보존,\n혼입 NG 판정 0건 확인"], "1. QR 미스캔시 투입불가 강제 게이트 정상 작동 확인됨\n2. 월 1회 시스템 성능 점검 및 이상패턴 데이터 점검 지속 要\n3. 분기 1회 시뮬레이션 재교육 일정 준수 要"]];
+const SEED=[["2024-07-17", "2024-10-16", "김상기", "SKF씰", "3공장", "JA", "1952-0056-01", "다량", "▣BENDING 다이마모로 단높이 치수NG 발생됨", "1. 밴딩다이 마모주기 설정 하여 MES 등록 주기 도래시 알람발생\n2. 일별 X_R 관리도 체크 및 변동사항 점검실시", "2024-07-24", [10, 7, 7, 10, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "밴딩다이 마모지기 MES 등록 도래시 알람발생", "일별 X_R 관리도 체크", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要      3.일별 X_R 점검 강화"], ["2024-08-15", "2024-11-21", "김상기", "SKF ATC", "", "MSBU RING", "BDA-1106CA", "1EA", "1) 열처리 방청후 스틸재질의 적재바로 박스에 포장중 \n   모서리부에 찍힘\n2) 검사기 회전판 내에서 제품 걸림으로 인한 찍힘", "1) 열처리 포장 적재바 모서리부를 Round형태로 변경 \n2) 검사기 회전판 내에서 제품걸림 및 낙하 제품 폐기실시", "2024-08-22", [10, 6, 7, 9, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "열처리 포장 적재바 모서리부 Round상태 확인", "검사기 회전판걸림 제품은 즉시 폐기 되고있으며\n낙하품표준류 비치되어있음", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 16,500ea 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要"], ["2024-09-05", "2024-12-04", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1113AA", "1EA", "1.소재투입시 1피치씩 수작업으로 스템핑하므로 타발되는 위치가 어긋나는 경우가 발생됨 작업자는 수작업으로 스탬핑한 제품은 구분해서 폐기하여야 하나 구분이 미흡하여 혼입됨\n2.검사기에서 배출된 휨불량(진원도 or 높이) 재검시 높이게이지를 통과하며 육안검사시 미검출됨검사기에서 배출된 휨불량(진원도 or 높이) 재검시 높이게이지를 통과하며 육안검사시 미검출됨", "1) 소재 투입시 투입부분 상단에 마킹을 실시하여 수작업 스템핑 \n   제품이 식별될수 있도록 함\n2) 고품을 검사실 내에 한도견본으로 비치하고 검사자 교육을 실시함", "2024-09-05", [10, 6, 7, 9, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "시업전 NG마스터를 검사기에 넣어 점검실시중\n(NG마스터 검출됨)", "소재 투입시 투입부 상단 마킹후 스템핑 실시중", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품1 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要"], ["2024-09-10", "2024-12-09", "김상기", "SKF ATC", "", "MSBU RING", "OW-BDA-1179", "다량", "1) 기종교환시 잔량품 혼입으로 추정됨\n2) 잔량품은 외관검사만 실시하여 포장실시\n3) 혼입방지 교육을 실시하고 있으나 년1회만 실시", "1) 잔량품 투입시 사이즈표 대조확인\n2) 혼입 방지를 위한 작업자 교육훈련 분기별 실시\n3) 외관검사후 검사기 투입", "2024-09-13", [10, 6, 7, 9, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "혼입방지 교육을 분기별로 실시하고 있음", "잔량품 투입시 사이즈 대조표 확인후 잔량품 투입하고있음", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要  2. 작업전/후 구분관리 강화 要  3. 혼입방지를 위해 분기별 교육을 실시하고있음\n4. 잔량품 투입시 사이즈 대조표 사이즈확인 투입실시되어지고 있음"], ["2024-10-17", "", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1106CA", "1EA", "프레스 작업시 칩가루 찍힘으로 추정", "생산시 칩가루 찍힘을 방지하기 위하여 프레스 공정에 에어블로어를\n설치", "2024-10-18", [10, 6, 7, 9, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "금형일상점검 실시함", "금형일상저검 항목에 부쉬점검 항목 추가 관리", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要"], ["2024-10-28", "", "김상기", "SKF ATC", "", "MSBU RING", "IW-BDA-1113D", "2EA", "▣ #01(피어싱)의 스크랩이 부상하여   \n   #04(포밍) 공정으로 흘러가서 눌림 현상이 발생됨\n▣ 키커펀치가 약하여 스크랩을 밀어내지 못함\n    (#01 피어싱 공정)", "키커펀치의 핀 사이즈를 증대시킴\n(키커펀치 핀 2mm증대, 스프링 1.5배 증대)", "2024-11-01", [10, 7, 7, 9, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "금형일상점검 실시함", "금형일상저검 항목에 부쉬점검 항목 추가 관리", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要"], ["2024-11-20", "2024-11-21", "김상기", "SKF씰", "3공장", "A/S", "1839-629", "650EA", "▣내경피어싱 패드마모로 내경 하한치불량 발생됨\n52.19 ± 0.04 (G/A외)\nATC: 52.10~12(내경치수미달)", "1. 피어싱 마모주기 설정 하여 전산 등록 주기 도래시 알람발생\n2. GO/NO 게이지 제작하여 자주검사실시", "2024-11-25", [10, 7, 7, 10, 8, 7, 15, 15, 18], ["불량 없음", "이상발생시 처리절차 게시 要", "유효함", "키 피어싱 마모주기 설정 하여 전산 등록 주기 도래시 알람발생", "GO/NO 게이지 제작하여 자주검사실시", "작업자 교육실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과  찍힘없음"], "1. 불량 재발 점검 확인 및  일상점검 강화 要        2. 작업전/후 구분관리 강화 要    3.순회검사 강화"], ["2025-03-04", "2025-03-06", "김상기", "SBC", "", "MSBU RING", "IW-BDA-1106", "1EA", "IW-BDA-1156 제품혼입\n잔량품 투입전 대조 확인방법이 규정되지 않음", "잔량품 보관시 각아이템별 상세 식별표현장 비치후 보관장소로 이동함", "2025-03-06", [10, 7, 7, 9, 8, 7, 15, 15, 18], ["대책 적용후 불량 재발 없음", "잔량품 투입시 사이즈 대조확인 절차 수립되어 \n있으나 처리절차 게시 보완 要", "잔량품 식별표 비치 및 보관장소 이동 대책은 지속 유효함", "잔량품 보관시 식별표 부착 및 보관장소 이동여부\n일상점검 실시중", "잔량품 관리절차서 개정 완료 및 현장 게시 확인", "작업자 및 검사원 교육실시 완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과 혼입없음"], "1. 잔량품 관리절차서 개정 배포 및 현장 게시 확인\n2. 잔량품 투입시 사이즈 대조확인 일상점검 강화 要"], ["2025-05-13", "2025-05-14", "김상기", "SBC", "", "MSBU RING", "IW-BDA-1106CB", "5EA", "1106 in 블랭킹 펀치 다이파손으로 그린 표시부 찍힘으로 슬립된 불량발생", "펀치다이 연마주기 10만타 → 9만타로 주기변경 연마 및 파손여부 확인으로 사전 불량예방", "2025-05-14", [10, 7, 7, 8, 8, 7, 15, 15, 18], ["대책 적용후 불량 재발 없음", "펀치다이 연마주기 변경(10만타→9만타)관련\n처리절차 게시 보완 要", "연마주기 단축 대책은 지속 유효함", "펀치다이 연마주기 및 파손여부 일상점검 기록관리 실시중", "불량발생시 알람벨 설치 완료, 부적합품 절차 표준류 반영 게시중", "작업자 교육실시 완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과 찍힘없음"], "1. 펀치다이 연마주기 준수 및 파손여부 일상점검 강화 要\n2. 부적합품 발생시 알람벨 작동여부 확인 要"], ["2025-07-23", "2025-08-05", "김상기", "SBC", "", "MSBU RING", "OW-BDA-1179", "1EA", "OW-BDA-1156 제품혼입\n1179로 기종전환 후 1156을 발견할 경우 1179로 오판됨", "작업준비후 잔량확인 강화 (특히 검사기 내부 잔량확인후 QR코드인식)", "2025-08-05", [10, 7, 7, 9, 8, 7, 15, 15, 18], ["대책 적용후 불량 재발 없음", "기종전환시 잔량확인 절차 관련 처리절차 게시\n보완 要", "검사기 내부 잔량확인 및 QR코드인식 대책은 지속 유효함", "기종전환시 검사기 내부 잔량확인 및 QR코드인식 \n일상점검 실시중", "외상검점목록에 게이지 설정값 확인 항목 추가 \n관리중", "작업자 교육실시 완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과 혼입없음"], "1. 기종전환시 검사기 내부 잔량확인 철저 要\n2. 게이지 설정값 차별화 여부 지속관리 要"], ["2025-08-21", "2025-08-23", "김상기", "SBC", "", "MSBU RING", "IW-BDA-1106CB", "1EA", "내경찍힘\n금형 취출부 검사와 하형 스크랩이 원활히 떨어지지 않음", "금형 하형 홀더 취출부의 각도를 기준 50°에서 30°로 가공 스크랩 취출시 하형 홀더에 간섭 받지 않고 취출", "2025-08-23", [10, 7, 7, 9, 8, 7, 15, 15, 18], ["대책 적용후 불량 재발 없음", "금형 하형 홀더 취출부 각도변경 관련 처리절차 게시 \n보완 要", "취출부 각도 50°→30° 변경 대책은 지속 유효함", "FMEA 불량사례 반영 완료, 금형 일상점검 기록관리 실시중", "분석의 표준 문서 업데이트 완료 및 현장 게시 확인", "검사자 및 생산작업자 교육훈련 실시완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과 찍힘없음"], "1. FMEA 불량 사례 반영 및 표준문서 업데이트 확인\n2. 금형 일상점검시 취출부 각도 상태 확인 강화 要"], ["2025-12-01", "2025-12-02", "김상기", "SBC", "", "MSBU RING", "IW-BDA-1165A\nOW-BDA-1165A", "2EA", "인접한 설비 (좌, 우 1set) 에서 검사자 1명이 다른기종을 동시에 검사 작업할", "1.인접한 좌, 우 Set 로 배치된 설비에는 동일기종을 검사한다.", "2025-12-02", [10, 7, 7, 9, 8, 7, 15, 15, 18], ["대책 적용후 불량 재발 없음", "인접설비 동일기종 배치 관련 처리절차 게시 보완 要", "동일기종 검사 배치 대책은 지속 유효함", "제품혼입 방지를 위한 게이지 설정값 차별화 및 일상점검 실시중", "제품 이출시 라벨과 함께 이동 절차 표준류 반영 \n게시중", "작업자 교육실시 완료", "타기종 수평전개 실시완료", "제품 100EA 검사결과 혼입없음"], "1. 인접설비 동일기종 배치여부 일상점검 강화 要\n2. 제품 이출시 라벨 부착 및 이동절차 준수 확인 要"], ["2026-01-22", "2026-06-10", "김상기", "SBC", "", "MSBU RING", "OW-BDA-1179", "다량", "OW-BDA-1179 혼입 (ATC 조립라인)\n발생: 투입 전 1차 확인만 존재, 이중 확인 체계 미흡\n유출: 오류 발생시 즉시 피드백(차단/알림) 체계 부재로 사후 대응 위주", "1. QR코드 기반 잔량 혼입방지 시스템 구축\n   A박스(QR)→수량 입력→B박스(QR) 스캔 후 자동 OK/NG 판정,\n   미스캔시 투입 불가(강제 게이트)\n2. OK/NG 판정 시뮬레이션 훈련교육 및 분기 1회 재교육", "2026-01-23", [10, 8, 7, 9, 8, 7, 13, 15, 18], ["QR 시스템 적용후 혼입 불량 재발 없음\n(태진재고 230,000EA 재검 결과 동일불량 없음)", "스캔 즉시 OK/NG 화면 표시, NG시 투입 차단\n이상발생 처리절차 운영중", "QR 강제 게이트 시스템 적용으로 작업자 임의 생략 불가,\n지속 유효한 대책임", "검사기록(일시/작업자/박스코드/수량/판정) Google Sheets실시간 저장, 월 1회 시스템 성능·운영데이터 점검 실시", "작업표준에 QR 스캔 및 OK/NG 판정 절차 반영 게시 관리중", "OK/NG 판정 시뮬레이션 훈련교육 실시 완료,\n분기 1회 재교육 계획 수립", "전기종 확대 전개 진행중\n(유사 혼입 위험 공정 포함 적용 검토)", "양산 적용후 검사기록 전수 타임스탬프 보존,\n혼입 NG 판정 0건 확인"], "1. QR 미스캔시 투입불가 강제 게이트 정상 작동 확인됨\n2. 월 1회 시스템 성능 점검 및 이상패턴 데이터 점검 지속 要\n3. 분기 1회 시뮬레이션 재교육 일정 준수 要"]];
 
 /* ---------- utils ---------- */
 const $=s=>document.querySelector(s);
@@ -266,8 +267,8 @@ function mergeState(a,b){
 }
 
 /* ---------- 고객사 명칭 변경 규칙 ---------- */
-// SKF ATC → SBC : 2026년 발생분부터 적용
-const CUST_RENAME=[{from:'SKF ATC',to:'SBC',since:'2026-01-01'}];
+// SKF ATC → SBC : 2025년 발생분부터 적용(since 비우면 전체 기간 + 고객사 목록에서도 제거)
+const CUST_RENAME=[{from:'SKF ATC',to:'SBC',since:'2025-01-01'}];
 const cnorm=c=>String(c||'').replace(/\s/g,'').toUpperCase();
 function custRule(r){
   for(const x of CUST_RENAME){if(cnorm(r.cust)===cnorm(x.from)&&(r.occDate||'')>=x.since){r.cust=x.to;return true}}
@@ -277,7 +278,11 @@ function migrate(st){
   let ch=false;
   for(const r of st.recs)if(custRule(r)){r.ua=nowISO();ch=true}
   const cs=st.cfg.custs||[];
-  for(const x of CUST_RENAME)if(!cs.includes(x.to)){cs.unshift(x.to);st.cfg.custs=cs;st.cfg.ua=nowISO();ch=true}
+  for(const x of CUST_RENAME){
+    if(!cs.includes(x.to)){cs.unshift(x.to);st.cfg.custs=cs;st.cfg.ua=nowISO();ch=true}
+    const k=cs.findIndex(c=>cnorm(c)===cnorm(x.from));
+    if(!x.since&&k>=0){cs.splice(k,1);st.cfg.custs=cs;st.cfg.ua=nowISO();ch=true}
+  }
   return ch;
 }
 
@@ -349,6 +354,7 @@ function monList(r){
 const monPending=r=>monList(r).filter(x=>x.active&&!x.res);
 const monNG=r=>monList(r).some(x=>x.res&&x.res.res==='NG');
 const openActs=r=>(r.acts||[]).filter(a=>!a.done);
+const hasDoc=r=>(r.files||[]).some(f=>f.cat===DOC_CAT);
 const evCover=r=>{const s=new Set((r.files||[]).filter(f=>f.item!==''&&f.item!=null).map(f=>+f.item));return ITEMS.filter((x,i)=>s.has(i)).length};
 function monBadges(r){
   const L=monList(r);if(!L.length)return'<span class="muted">-</span>';
@@ -459,6 +465,7 @@ function filtered(){
       else if(FILT.s==='mon'){if(!monPending(r).some(m=>dday(m.due)<=30))return false}
       else if(FILT.s==='ng'){if(!monNG(r))return false}
       else if(FILT.s==='noev'){if((r.files||[]).length)return false}
+      else if(FILT.s==='nodoc'){if(hasDoc(r))return false}
       else if(judge(r)!==FILT.s)return false}
     if(q&&![r.part,r.car,r.cause,r.action,r.cust,r.site,r.summary].join(' ').toLowerCase().includes(q))return false;
     return true;
@@ -484,7 +491,7 @@ function vList(){
   <div class="panel"><div class="flt">
    <select onchange="FILT.y=this.value;render()">${o('','전체 연도',FILT.y)}${ys.map(y=>o(y,y+'년',FILT.y)).join('')}</select>
    <select onchange="FILT.c=this.value;render()">${o('','전체 고객사',FILT.c)}${cs.map(c=>o(c,c,FILT.c)).join('')}</select>
-   <select onchange="FILT.s=this.value;render()">${o('','전체 상태',FILT.s)}${o('wait','평가대기',FILT.s)}${o('appr','결재대기',FILT.s)}${o('done','승인완료',FILT.s)}${o('A','판정: Accept',FILT.s)}${o('R1','판정: Reject·보완',FILT.s)}${o('R2','판정: Reject·재수립',FILT.s)}${o('act','要 후속조치 미완료',FILT.s)}${o('mon','재발확인 도래(30일)',FILT.s)}${o('ng','재발(NG) 발생',FILT.s)}${o('noev','증빙 미첨부',FILT.s)}</select>
+   <select onchange="FILT.s=this.value;render()">${o('','전체 상태',FILT.s)}${o('wait','평가대기',FILT.s)}${o('appr','결재대기',FILT.s)}${o('done','승인완료',FILT.s)}${o('A','판정: Accept',FILT.s)}${o('R1','판정: Reject·보완',FILT.s)}${o('R2','판정: Reject·재수립',FILT.s)}${o('act','要 후속조치 미완료',FILT.s)}${o('mon','재발확인 도래(30일)',FILT.s)}${o('ng','재발(NG) 발생',FILT.s)}${o('noev','증빙 미첨부',FILT.s)}${o('nodoc','대책서 미첨부',FILT.s)}</select>
    <input id="fq" placeholder="품명·차종·불량내용 검색" value="${esc(FILT.q)}" oninput="FILT.q=this.value;clearTimeout(window._qt);window._qt=setTimeout(()=>{const p=this.selectionStart;render();const e=$('#fq');e.focus();e.setSelectionRange(p,p)},250)" style="min-width:200px;flex:1">
   </div>${listTable(rows)}</div>`;
 }
@@ -657,6 +664,15 @@ function shrink(file){return new Promise((res,rej)=>{const u=URL.createObjectURL
   im.onload=()=>{const k=Math.min(1,1600/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
     c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>b?res(b):rej(new Error('압축실패')),'image/jpeg',0.82)};
   im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('이미지 해석 불가'))};im.src=u})}
+// Storage 업로드 후 증빙 메타 반환(사진은 압축)
+async function putFile(r,f,cat,item){
+  let blob=f,type=f.type||'application/octet-stream',ext=((f.name.split('.').pop()||'bin').toLowerCase()).replace(/[^a-z0-9]/g,'')||'bin';
+  if(/^image\//.test(type)&&!/gif|svg/.test(type)){try{const b=await shrink(f);if(b.size<f.size){blob=b;type='image/jpeg';ext='jpg'}}catch(e){}}
+  const id='F'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),path=`${FOLDER}/${r.id}/${id}.${ext}`;
+  const res=await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${path}`,{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':type,'x-upsert':'true'},body:blob});
+  if(!res.ok)throw new Error(res.status+' '+(await res.text()).slice(0,80));
+  return {id,name:f.name,cat,item,path,type,size:blob.size,osize:f.size,by:USER.n,at:nowISO()};
+}
 async function upFiles(list){
   const r=srec();if(!r||CUR._new){toast('먼저 [저장]한 뒤 첨부하세요');return}
   if(!USER){login();return}
@@ -664,14 +680,8 @@ async function upFiles(list){
   for(let i=0;i<fl.length;i++){
     const f=fl[i];$('#ev_st').textContent=`업로드 중 ${i+1}/${fl.length} …`;
     if(f.size>20e6){toast(f.name+' : 20MB 초과');continue}
-    let blob=f,type=f.type||'application/octet-stream',ext=((f.name.split('.').pop()||'bin').toLowerCase()).replace(/[^a-z0-9]/g,'')||'bin';
-    if(/^image\//.test(type)&&!/gif|svg/.test(type)){try{const b=await shrink(f);if(b.size<f.size){blob=b;type='image/jpeg';ext='jpg'}}catch(e){}}
-    const id='F'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),path=`${FOLDER}/${r.id}/${id}.${ext}`;
-    try{
-      const res=await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${path}`,{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':type,'x-upsert':'true'},body:blob});
-      if(!res.ok)throw new Error(res.status+' '+(await res.text()).slice(0,80));
-      patch(x=>x.files.push({id,name:f.name,cat,item,path,type,size:blob.size,by:USER.n,at:nowISO()}));ok++;
-    }catch(e){console.warn(e);toast('업로드 실패: '+f.name+' ('+e.message+')')}
+    try{const m=await putFile(r,f,cat,item);patch(x=>x.files.push(m));ok++}
+    catch(e){console.warn(e);toast('업로드 실패: '+f.name+' ('+e.message+')')}
   }
   const st=$('#ev_st');if(st)st.textContent=ok?`${ok}건 첨부 완료`:'';
   if(ok)toast(`증빙 ${ok}건 첨부`);
@@ -831,6 +841,90 @@ function printRecs(list){
   Promise.race([Promise.all(ims.map(i=>i.complete?1:new Promise(ok=>{i.onload=i.onerror=ok}))),new Promise(ok=>setTimeout(ok,5000))]).then(()=>setTimeout(()=>window.print(),50));
 }
 
+/* ---------- 대책서 일괄 첨부 (공유폴더) ---------- */
+const BULK_ACC='.pdf,.xlsx,.xls,.xlsm,.docx,.doc,.pptx,.ppt,.hwp,.hwpx,.jpg,.jpeg,.png';
+const BULK_EXT=/\.(pdf|xlsx|xls|xlsm|docx|doc|pptx|ppt|hwp|hwpx|jpe?g|png)$/i;
+let BULK=null; // {rows:[{f,path,img,id,how,cands,st,msg}],busy,none,img}
+const pnorm=s=>String(s||'').toUpperCase().replace(/[^0-9A-Z]/g,'');
+function pathDates(p){
+  const out=[],add=(y,m,d)=>{y=+y;if(y<100)y+=2000;m=+m;d=+d;if(y>=2015&&y<=2040&&m>=1&&m<=12&&d>=1&&d<=31)out.push(y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0'))};
+  let m;const a=/(?<!\d)(20\d{2}|\d{2})[.\-_ ](\d{1,2})[.\-_ ](\d{1,2})(?!\d)/g,b=/(?<!\d)(20\d{2}|\d{2})(\d{2})(\d{2})(?!\d)/g;
+  while((m=a.exec(p)))add(m[1],m[2],m[3]);while((m=b.exec(p)))add(m[1],m[2],m[3]);
+  return out;
+}
+const dgap=(a,b)=>a&&b?Math.abs((new Date(a+'T00:00:00')-new Date(b+'T00:00:00'))/864e5):Infinity;
+// 경로 속 가장 긴 품번이 일치하는 건 → 여러 건이면 경로 날짜, 없으면 파일 수정일로 선택
+const nearest=(c,ds,lim,gap)=>{
+  const sc=c.map(r=>({r,g:Math.min(...ds.map(d=>Math.min(dgap(d,r.occDate),dgap(d,r.doneDate))))})).sort((x,y)=>x.g-y.g);
+  return sc[0].g<=lim&&(sc.length<2||sc[1].g-sc[0].g>=gap)?sc[0].r:null;
+};
+function bulkMatch(path,mt){
+  const P=pnorm(path),ds=pathDates(path);let best=0,c=[];
+  for(const r of S.recs){
+    let L=0;for(const t of String(r.part||'').split(/[\n,\/]+/)){const k=pnorm(t);if(k.length>=5&&P.includes(k))L=Math.max(L,k.length)}
+    if(!L)continue;if(L>best){best=L;c=[r]}else if(L===best)c.push(r);
+  }
+  if(!c.length)return{id:'',how:'none',cands:[]};
+  const cands=c.map(r=>r.id);
+  if(c.length===1)return{id:c[0].id,how:'part',cands};
+  let r;
+  if(ds.length&&(r=nearest(c,ds,45,7)))return{id:r.id,how:'date',cands};
+  if(!ds.length&&mt&&(r=nearest(c,[mt],30,14)))return{id:r.id,how:'mtime',cands};
+  return{id:'',how:'multi',cands};
+}
+const isDup=(r,f)=>!!r&&(r.files||[]).some(x=>x.name===f.name&&(x.osize??x.size)===f.size);
+function bulkRead(list){
+  if(!USER){login();return}
+  const fl=[...list].filter(f=>!/^(~\$|\.)/.test(f.name)&&!/^thumbs\.db$/i.test(f.name)&&BULK_EXT.test(f.name));
+  if(!fl.length){toast('첨부 가능한 대책서 파일이 없습니다');return}
+  const rows=fl.map(f=>{const path=f.webkitRelativePath||f.name,m=bulkMatch(path,f.lastModified?locD(f.lastModified):'');return{f,path,img:/\.(jpe?g|png)$/i.test(f.name),...m,st:f.size>20e6?'big':'',msg:''}});
+  rows.forEach(x=>bulkChk(x));
+  const ord={multi:0,mtime:1,none:2,date:3,part:4};rows.sort((a,b)=>ord[a.how]-ord[b.how]||a.path.localeCompare(b.path));
+  BULK={rows,busy:false,none:false,img:false};$('#bulkv').innerHTML=bulkHtml();
+}
+function bulkChk(x){if(x.st==='big'||x.st==='ok')return;x.st=isDup(S.recs.find(r=>r.id===x.id),x.f)?'dup':''}
+const bulkOn=x=>x.id&&!x.st&&(BULK.img||!x.img);
+function bulkSet(i,v){const x=BULK.rows[i];x.id=v;bulkChk(x);$('#bulkv').innerHTML=bulkHtml()}
+function bulkHtml(){
+  if(!BULK)return'';
+  const R=BULK.rows,recs=[...S.recs].sort((a,b)=>(b.occDate||'').localeCompare(a.occDate||''));
+  const lab=r=>esc(`${recNo(r)} · ${String(r.part||'').split('\n')[0]} · ${fmtD(r.occDate)} · ${custLabel(r)}`);
+  const HOW={part:['품번 일치','ok'],date:['품번+날짜','ok'],mtime:['수정일 추정','w'],multi:['확인 필요','w'],none:['미연결','n']};
+  const STX={big:['20MB 초과','ng'],dup:['이미 첨부','n'],ok:['완료','ok'],err:['실패','ng'],up:['업로드 중','b']};
+  const go_=R.filter(bulkOn).length,cnt=k=>R.filter(x=>x.how===k).length,ni=R.filter(x=>x.img).length;
+  const V=R.filter(x=>(BULK.none||x.how!=='none')&&(BULK.img||!x.img));
+  let h=`<div class="flt"><span class="muted">파일 ${R.length}개 · 자동연결 ${cnt('part')+cnt('date')} · <span style="color:var(--warn)">확인 필요 ${cnt('multi')+cnt('mtime')}</span> · 미연결 ${cnt('none')}</span>
+   <label class="muted"><input type="checkbox" ${BULK.none?'checked':''} onchange="BULK.none=this.checked;$('#bulkv').innerHTML=bulkHtml()"> 미연결 파일 보기</label>
+   <label class="muted"><input type="checkbox" ${BULK.img?'checked':''} ${BULK.busy?'disabled':''} onchange="BULK.img=this.checked;$('#bulkv').innerHTML=bulkHtml()"> 사진(jpg·png) ${ni}개 포함</label><span class="sp"></span>
+   <button class="btn p" ${go_&&!BULK.busy?'':'disabled'} onclick="bulkUp()">⬆ ${go_}건 업로드</button><button class="btn" ${BULK.busy?'disabled':''} onclick="BULK=null;$('#bulkv').innerHTML=''">닫기</button></div>
+   <div class="muted" id="bulk_st" style="margin-bottom:6px"></div>
+   <div class="tw"><table class="t"><tr><th>파일 (폴더 경로)</th><th>연결할 검증 건</th><th class="c">연결</th><th class="c">상태</th></tr>`;
+  if(!V.length)h+=`<tr><td colspan="4" class="muted" style="text-align:center">표시할 파일이 없습니다 (품번이 들어있는 파일 없음)</td></tr>`;
+  h+=V.map(x=>{const i=R.indexOf(x),cs=x.cands.map(id=>S.recs.find(r=>r.id===id)).filter(Boolean),rest=recs.filter(r=>!x.cands.includes(r.id));
+    const sel=`<select style="max-width:340px" ${BULK.busy||x.st==='ok'?'disabled':''} onchange="bulkSet(${i},this.value)"><option value="">— 첨부 안 함 —</option>${cs.length?`<optgroup label="품번 후보">${cs.map(r=>`<option value="${r.id}" ${r.id===x.id?'selected':''}>${lab(r)}</option>`).join('')}</optgroup>`:''}<optgroup label="전체">${rest.map(r=>`<option value="${r.id}" ${r.id===x.id?'selected':''}>${lab(r)}</option>`).join('')}</optgroup></select>`;
+    const st=x.st?STX[x.st]:x.id?['대기','b']:['-','n'];
+    return`<tr><td><div class="ell" style="max-width:420px" title="${esc(x.path)}">${esc(x.path)}</div><div class="muted">${(x.f.size/1048576).toFixed(1)}MB</div></td><td>${sel}</td><td class="c"><span class="tag ${HOW[x.how][1]}">${HOW[x.how][0]}</span></td><td class="c"><span class="tag ${st[1]}" title="${esc(x.msg)}">${st[0]}</span></td></tr>`}).join('');
+  return h+'</table></div>';
+}
+async function bulkUp(){
+  if(!USER){login();return}
+  const todo=BULK.rows.filter(bulkOn);if(!todo.length)return;
+  if(!confirm(`대책서 ${todo.length}건을 '${DOC_CAT}'(으)로 첨부합니다.`))return;
+  BULK.busy=true;let ok=0,n=0;
+  for(const x of todo){
+    n++;x.st='up';$('#bulkv').innerHTML=bulkHtml();$('#bulk_st').textContent=`업로드 중 ${n}/${todo.length} …`;
+    const r=S.recs.find(y=>y.id===x.id);
+    if(!r){x.st='err';x.msg='검증 건 없음';continue}
+    if(isDup(r,x.f)){x.st='dup';continue}
+    try{const m=await putFile(r,x.f,DOC_CAT,'');ensureRec(r).files.push(m);saveLocal();schedulePush();x.st='ok';ok++}
+    catch(e){console.warn(e);x.st='err';x.msg=e.message}
+  }
+  BULK.busy=false;$('#bulkv').innerHTML=bulkHtml();
+  const fail=todo.filter(x=>x.st==='err').length;
+  $('#bulk_st').textContent=`${ok}건 첨부 완료`+(fail?` · 실패 ${fail}건 (상태에 마우스를 올리면 사유 표시)`:'');
+  toast(`대책서 ${ok}건 첨부`);
+}
+
 /* ---------- data mgmt ---------- */
 let IMP=[];
 function vData(){
@@ -841,7 +935,16 @@ function vData(){
    <div id="impv" style="margin-top:12px"></div></div>
   <div class="panel"><h3>📤 내보내기 · 백업</h3>
    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="exportXlsx(S.recs)">⬇ 전체 목록 엑셀</button><button class="btn" onclick="backup()">⬇ JSON 백업</button>${isAppr()?`<label class="btn">⬆ JSON 복원<input type="file" accept=".json" hidden onchange="restore(this.files[0])"></label>`:''}<button class="btn" onclick="sync()">🔃 서버 새로고침</button></div>
-   <div class="muted" style="margin-top:12px;line-height:1.7">· 서버: 공유 Supabase kv_store (<code>${KV}</code>) — 모든 기기 자동 동기화<br>· 상단 점: 초록=동기화 완료, 노랑=진행 중, 빨강=실패(로컬에 저장됨)<br>· 전체 ${S.recs.length}건 · 버전 ${VER}</div></div></div>`;
+   <div class="muted" style="margin-top:12px;line-height:1.7">· 서버: 공유 Supabase kv_store (<code>${KV}</code>) — 모든 기기 자동 동기화<br>· 상단 점: 초록=동기화 완료, 노랑=진행 중, 빨강=실패(로컬에 저장됨)<br>· 전체 ${S.recs.length}건 · 버전 ${VER}</div></div></div>
+  <div class="panel" style="margin-top:14px"><h3>📁 유출불량 대책서 일괄 첨부 <span class="muted">서버 공유폴더 → 검증 건 자동 연결</span></h3>
+   <div class="muted" style="margin-bottom:10px;line-height:1.7">· [폴더 선택] 창에서 서버 공유폴더(네트워크 드라이브 또는 <code>\\\\서버\\폴더</code> 주소 입력)의 대책서 폴더를 고르면 하위 폴더까지 모두 읽습니다.<br>
+    · 폴더명·파일명에 들어있는 <b>품번</b>으로 건을 찾고, 같은 품번이 여러 건이면 <b>날짜</b>(예: 20250514, 2025-05-14, 250514)로 발생일·대책완료일과 가장 가까운 건을 고릅니다.<br>
+    · 경로에 날짜가 없으면 파일 수정일로 추정하고 '수정일 추정'으로 표시합니다. 이때는 연결이 맞는지 꼭 확인하세요.<br>
+    · 고객사 폴더가 여럿인 상위 폴더(예: 불량대응\\유출불량)를 통째로 골라도 됩니다. 품번이 없는 파일(양식 등)은 자동으로 빠지고, 사진은 기본 제외입니다.<br>
+    · 이미 같은 이름·크기로 첨부된 파일은 건너뜁니다. 업로드 전 연결 결과를 확인·수정할 수 있습니다.</div>
+   ${canEdit()?`<div class="flt"><label class="btn p">📁 폴더 선택<input type="file" webkitdirectory directory multiple hidden onchange="bulkRead(this.files);this.value=''"></label>
+    <label class="btn">📄 파일 선택<input type="file" multiple hidden accept="${BULK_ACC}" onchange="bulkRead(this.files);this.value=''"></label></div>`:'<div class="hint">로그인 후 사용할 수 있습니다.</div>'}
+   <div id="bulkv">${bulkHtml()}</div></div>`;
 }
 function readXls(files){
   if(!window.XLSX){toast('엑셀 라이브러리를 불러오지 못했습니다(네트워크 확인)');return}
@@ -897,7 +1000,7 @@ function exportXlsx(list){
     ITEMS.forEach((it,i)=>{o[`${i+1}.평점(${it.m})`]=r.scores[i];o[`${i+1}.평가의견`]=r.opinions[i]});
     o['종합의견']=r.summary;o['종합의견평점(20)']=r.scores[8];o['합계']=complete(r)?total(r):'';o['판정']=judge(r)?JT[judge(r)][0]:'';o['상태']=STT[status(r)][0];
     o['검토']=r.appr&&r.appr.review?r.appr.review.n+' '+r.appr.review.d:'';o['승인']=r.appr&&r.appr.approve?r.appr.approve.n+' '+r.appr.approve.d:'';
-    o['증빙첨부']=(r.files||[]).length;o['증빙연결항목']=evCover(r)+'/'+ITEMS.length;
+    o['대책서첨부']=hasDoc(r)?'O':'X';o['증빙첨부']=(r.files||[]).length;o['증빙연결항목']=evCover(r)+'/'+ITEMS.length;
     o['要후속조치']=(r.acts||[]).length;o['要미완료']=openActs(r).length;o['要미완료내용']=openActs(r).map(a=>a.text+(a.owner?' ('+a.owner+')':'')+(a.due?' ~'+a.due:'')).join('\n');
     monList(r).forEach(x=>{o[x.m+'개월 확인']=x.res?(x.res.res==='OK'?'재발없음':'재발')+' '+x.res.d:(x.active?'예정 '+x.due:'대상외')});return o});
   const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'유효성검증');
